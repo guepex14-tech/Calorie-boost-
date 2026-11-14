@@ -137,9 +137,9 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <button class="tab" data-tab="prod">Produits</button>
   <button class="tab" data-tab="mov">Mouvements</button>
   <button class="tab" data-tab="buy">Achats</button>
-  <button class="tab" data-tab="sales">Ventes</button>
   <button class="tab" data-tab="cash">Caisse</button>
   <button class="tab" data-tab="cli">Clients</button>
+  <button class="tab" data-tab="sit">Situation</button>
   <button class="tab" data-tab="sync">Synchro</button>
   <button class="tab" data-tab="data">Sauvegarde</button>
 </div>
@@ -158,7 +158,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="field" style="margin-top:10px"><label for="sText">Écris la vente comme un message (ex : سدر 2 كغ 11000 remise 500)</label>
       <div class="row" style="margin-top:4px"><input type="text" id="sText" placeholder="ex : زيت بدراوي 3 900 remise 50" autocomplete="off"><button class="ghost" id="sParse">Remplir</button></div>
     </div>
-    <div class="field" style="margin-top:10px"><label for="sSearch">Produit (tape 1, 2 ou 3 lettres)</label>Produit (tape 1, 2 ou 3 lettres)</label>
+    <div class="field" style="margin-top:10px"><label for="sSearch">Produit (tape 1, 2 ou 3 lettres)</label>
       <input type="text" id="sSearch" autocomplete="off" placeholder="ex : سدر، زيت، تلبي...">
       <div id="sSug" class="sug"></div>
     </div>
@@ -182,7 +182,26 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <button class="ghost" id="sCancel">Annuler</button>
     </div>
   </div>
-  <div class="card" id="ctrl"></div>
+
+  
+  <!-- Historique des ventes (juste sous la vente rapide) -->
+
+  <div class="card">
+    <h2>Historique des ventes</h2>
+    <div class="row" style="margin-top:0">
+      <button class="ghost small" id="hPrev">◀ Précédent</button>
+      <input type="date" id="hDay">
+      <button class="ghost small" id="hNext">Suivant ▶</button>
+    </div>
+    <div class="stats" style="margin-top:12px">
+      <div><div class="label">Total de la journée</div><div class="big in" id="hTotal">0 DA</div></div>
+      <div><div class="label">Nombre de ventes</div><div class="big" id="hCount">0</div></div>
+      <div><div class="label">Bénéfice du jour</div><div class="big in" id="hProfit">0 DA</div></div>
+    </div>
+    <div class="label" style="margin-top:8px" id="hSub"></div>
+  </div>
+  <div class="card"><h2>Ventes de cette journée</h2><div id="sList"></div></div>
+  <div class="card"><h2>Journées précédentes</h2><div id="hDays"></div></div>
   <div class="stats">
     <div class="card"><div class="label">Valeur du stock (achat)</div><div class="big" id="kCost">—</div></div>
     <div class="card"><div class="label">Valeur de vente</div><div class="big" id="kSale">—</div></div>
@@ -278,24 +297,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   </div>
   <div class="card"><h2>Bons enregistrés</h2><div id="bList"></div></div>
 </section>
-<section id="tab-sales" class="hidden">
-  <div class="card">
-    <h2>Historique des ventes</h2>
-    <div class="row" style="margin-top:0">
-      <button class="ghost small" id="hPrev">◀ Précédent</button>
-      <input type="date" id="hDay">
-      <button class="ghost small" id="hNext">Suivant ▶</button>
-    </div>
-    <div class="stats" style="margin-top:12px">
-      <div><div class="label">Total de la journée</div><div class="big in" id="hTotal">0 DA</div></div>
-      <div><div class="label">Nombre de ventes</div><div class="big" id="hCount">0</div></div>
-      <div><div class="label">Bénéfice du jour</div><div class="big in" id="hProfit">0 DA</div></div>
-    </div>
-    <div class="label" style="margin-top:8px" id="hSub"></div>
-  </div>
-  <div class="card"><h2>Ventes de cette journée</h2><div id="sList"></div></div>
-  <div class="card"><h2>Journées précédentes</h2><div id="hDays"></div></div>
-</section>
+
 <section id="tab-cash" class="hidden">
   <div class="card">
     <h2>Caisse (liquidité)</h2>
@@ -322,6 +324,9 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div id="eList" style="margin-top:8px"></div>
   </div>
 </section>
+<section id="tab-sit" class="hidden">
+  <div class="card" id="ctrl"></div>
+</section>
 <section id="tab-cli" class="hidden">
   <div class="card">
     <h2>Nouveau client</h2>
@@ -332,7 +337,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <h2>Opérations sur un client</h2>
     <div class="row" style="margin-top:0"><div class="field"><label for="cSel">Client</label><select id="cSel"></select></div></div>
     <div class="row">
-      <div class="field"><label for="cAmt">Montant (DA)</label><input type="number" id="cAmt" min="0" step="100"></div>
+      <div class="field"><label for="cliAmt">Montant (DA)</label><input type="number" id="cliAmt" min="0" step="100"></div>
       <div class="field"><label for="cDesc">Description</label><input type="text" id="cDesc" placeholder="Ex : ancienne dette, sacs de miel"></div>
     </div>
     <div class="row"><button id="cDebt">Ajouter une dette</button><button class="ghost" id="cPay">Paiement reçu</button></div>
@@ -422,7 +427,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <div class="field"><label for="pAmt">Montant (DA)</label><input type="number" id="pAmt" min="0" step="100"></div>
       <div class="field"><label for="pDate">Date</label><input type="date" id="pDate"></div>
     </div>
-    <div class="row"><input type="text" id="pNote" placeholder="Note (optionnel)"><button id="pSave">Enregistrer</button></div>
+    <div class="row"><input type="text" id="pNote" placeholder="Note (optionnel)"><button id="dpSave">Enregistrer</button></div>
   </div>
   <div class="card">
     <h2>Historique par mois</h2>
@@ -561,7 +566,7 @@ function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.cus
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
   t.classList.add("on");
-  ["dash", "prod", "mov", "buy", "sales", "cash", "cli", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
+  ["dash", "prod", "mov", "buy", "cash", "cli", "sit", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
 }));
 
 function resetProdForm() {
@@ -1784,13 +1789,13 @@ document.getElementById("cAdd").addEventListener("click", () => {
 document.getElementById("cSel").addEventListener("change", renderCustomers);
 function customerOp(type) {
   const c = D.customers.find(x => x.id === document.getElementById("cSel").value);
-  const amt = parseFloat(document.getElementById("cAmt").value);
+  const amt = parseFloat(document.getElementById("cliAmt").value);
   if (!c) return alert("Choisis un client.");
   if (!amt || amt <= 0) return alert("Mets un montant.");
   const desc = document.getElementById("cDesc").value.trim();
   if (type === "payment") c.entries.push({ id: uid(), date: today(), amount: amt, type: "payment", desc: desc || "Paiement reçu" });
   else c.entries.push({ id: uid(), date: today(), amount: amt, type: "debt", desc: desc || "Dette ajoutée" });
-  document.getElementById("cAmt").value = "";
+  document.getElementById("cliAmt").value = "";
   document.getElementById("cDesc").value = "";
   renderAll();
 }
@@ -2108,7 +2113,7 @@ document.getElementById("cSave").addEventListener("click", () => {
 /* Paiements */
 document.getElementById("pDate").value = today();
 document.getElementById("dDate").value = today();
-document.getElementById("pSave").addEventListener("click", () => {
+document.getElementById("dpSave").addEventListener("click", () => {
   const s = S.find(x => x.id === document.getElementById("pSup").value);
   const amount = parseFloat(document.getElementById("pAmt").value);
   if (!s || !amount || amount <= 0) return alert("Choisis un fournisseur et un montant.");
