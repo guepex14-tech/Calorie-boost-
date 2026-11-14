@@ -1,4 +1,4 @@
-const CACHE = "calorie-boost-v1";
+const CACHE = "calorie-boost-v2";
 const FILES = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -13,13 +13,14 @@ self.addEventListener("activate", e => {
   );
 });
 
+// Réseau d'abord : prend la dernière version quand il y a internet, sinon la copie enregistrée
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+    fetch(e.request).then(res => {
       const copy = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy));
       return res;
-    }).catch(() => caches.match("./index.html")))
+    }).catch(() => caches.match(e.request).then(r => r || caches.match("./index.html")))
   );
 });
