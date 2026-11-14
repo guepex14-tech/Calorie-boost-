@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gestion de calorie boost</title>
+<style>
+
+:root{box-sizing:border-box;--bg:#f6f5f1;--surface:#fff;--text:#1d1d1b;--muted:#6b6a64;--accent:#2e7d4f;--warn:#b7791f;--danger:#b23b3b;--border:#e2e0d8;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161614;--surface:#22221f;--text:#ecebe6;--muted:#9c9b93;--accent:#5fbf85;--warn:#e0b050;--danger:#e07a7a;--border:#373731;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.4}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:1.3rem;margin:8px 0 2px}
+h2{font-size:1.02rem;margin:0 0 8px}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:12px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
+.tab{background:transparent;color:var(--muted);border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap}
+.tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.label{color:var(--muted);font-size:.85rem}
+.big{font-size:1.4rem;font-weight:700}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--border)}
+.item:first-child{border-top:0}
+.name{font-weight:700}
+.meta{color:var(--muted);font-size:.82rem}
+.qty{font-weight:700;text-align:right;white-space:nowrap}
+.badge{display:inline-block;font-size:12px;padding:3px 8px;border-radius:999px;font-weight:600;margin-top:3px}
+.b-low{background:rgba(178,59,59,.15);color:var(--danger)}
+.b-ok{background:rgba(46,125,79,.15);color:var(--accent)}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
+.field label{font-size:.82rem;color:var(--muted)}
+input,select,textarea{flex:1;min-width:110px;padding:10px;font-size:16px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit}
+button{padding:10px 14px;font-size:14px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+button.danger{background:var(--danger)}
+button.small{padding:6px 10px;font-size:13px}
+.actions{display:flex;gap:6px;margin-top:6px}
+.hidden{display:none}
+.in{color:var(--accent);font-weight:700}
+.out{color:var(--danger);font-weight:700}
+.empty{color:var(--muted);text-align:center;padding:16px}
+footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
+
+
+:root{box-sizing:border-box;--bg:#f6f5f1;--surface:#fff;--text:#1d1d1b;--muted:#6b6a64;--accent:#2e7d4f;--warn:#b7791f;--danger:#b23b3b;--border:#e2e0d8;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161614;--surface:#22221f;--text:#ecebe6;--muted:#9c9b93;--accent:#5fbf85;--warn:#e0b050;--danger:#e07a7a;--border:#373731;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#161614;--surface:#22221f;--text:#ecebe6;--muted:#9c9b93;--accent:#5fbf85;--warn:#e0b050;--danger:#e07a7a;--border:#373731;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.4}
+main{max-width:620px;margin:0 auto;padding:16px}
+h1{font-size:1.3rem;margin:8px 0 2px}
+h2{font-size:1.02rem;margin:0 0 8px}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:12px}
+.dtabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
+.dtab{background:transparent;color:var(--muted);border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap}
+.dtab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.label{color:var(--muted);font-size:.85rem}
+.big{font-size:1.6rem;font-weight:700}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat .big{font-size:1.25rem}
+.bar{height:10px;background:var(--border);border-radius:6px;overflow:hidden;margin:10px 0 4px}
+.bar>div{height:100%;background:var(--accent);width:0%}
+.badge{display:inline-block;font-size:12px;padding:3px 8px;border-radius:999px;font-weight:600}
+.b-ok{background:rgba(46,125,79,.15);color:var(--accent)}
+.b-late{background:rgba(178,59,59,.15);color:var(--danger)}
+.b-todo{background:rgba(183,121,31,.15);color:var(--warn)}
+.b-done{background:rgba(46,125,79,.15);color:var(--accent)}
+.sup-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.name{font-weight:700}
+.note{color:var(--muted);font-size:.82rem;margin-top:2px}
+.amt{font-weight:700;text-align:right;white-space:nowrap}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+input,select,textarea{flex:1;min-width:110px;padding:10px;font-size:16px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit}
+button{padding:10px 14px;font-size:14px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+button.danger{background:var(--danger)}
+button.small{padding:6px 10px;font-size:13px}
+.actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.hist{font-size:.84rem;color:var(--muted);margin-top:8px}
+.hist div{padding:4px 0;border-top:1px dashed var(--border);display:flex;justify-content:space-between}
+.month{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border)}
+.month:first-child{border-top:0}
+.field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
+.field label{font-size:.82rem;color:var(--muted)}
+.hidden{display:none}
+.empty{color:var(--muted);text-align:center;padding:16px}
+footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
+
+
+.topnav{display:flex;gap:6px;max-width:640px;margin:0 auto;padding:12px 16px 0}
+.topbtn{flex:1;background:transparent;color:var(--muted);border:1px solid var(--border);padding:10px;border-radius:10px;font-size:15px;cursor:pointer}
+.topbtn.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+
+.field{position:relative}
+.sug{position:absolute;left:0;right:0;top:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:10;max-height:280px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.sug div{padding:10px 12px;border-top:1px solid var(--border);cursor:pointer;font-size:15px}
+.sug div:first-child{border-top:0}
+.sug div:hover{background:var(--bg)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chips button{background:transparent;color:var(--text);border:1px solid var(--border);padding:6px 10px;font-size:13px}
+.preview{font-weight:600;margin-top:10px;min-height:1.4em}
+.quick{border:2px solid var(--accent)}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <button class="topbtn on" data-view="stock">Stock</button>
+  <button class="topbtn" data-view="debts">Dettes fournisseurs</button>
+</nav>
+<div id="quitBox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="max-width:420px;width:100%">
+    <h2>Avant de quitter</h2>
+    <div class="label" style="margin-bottom:8px">Tes données sont enregistrées sur cet appareil. Veux-tu aussi exporter le fichier Excel pour les garder ailleurs ?</div>
+    <div class="row"><button id="qExcel">Exporter Excel</button><button class="ghost" id="qQuit">Quitter sans exporter</button><button class="ghost" id="qCancel">Annuler</button></div>
+    <div id="qDone" class="label" style="margin-top:8px"></div>
+  </div>
+</div>
+<div class="sub" id="lastOpen" style="max-width:640px;margin:0 auto;padding:4px 16px 0"></div>
+<div style="max-width:640px;margin:0 auto;padding:0 16px 4px;text-align:right"><button class="ghost small" id="quitBtn">Quitter ⏻</button></div>
+<div id="view-stock"><main>
+<h1>Stock</h1>
+<div class="sub">CALORIE BOOST · inventaire du 12 nov. 2026</div>
+
+<div class="tabs">
+  <button class="tab on" data-tab="dash">Tableau de bord</button>
+  <button class="tab" data-tab="prod">Produits</button>
+  <button class="tab" data-tab="mov">Mouvements</button>
+  <button class="tab" data-tab="buy">Achats</button>
+  <button class="tab" data-tab="sales">Ventes</button>
+  <button class="tab" data-tab="cash">Caisse</button>
+  <button class="tab" data-tab="cli">Clients</button>
+  <button class="tab" data-tab="sync">Synchro</button>
+  <button class="tab" data-tab="data">Sauvegarde</button>
+</div>
+
+<section id="tab-dash">
+  <div class="card" id="remind" style="display:none;border:2px solid var(--warn)">
+    <strong>⏰ Rappel : rapport du jour</strong>
+    <div class="label" style="margin-top:4px">Exporte les 4 fichiers Excel et envoie-les par email.</div>
+    <div class="row"><button id="remindGo">Exporter maintenant</button><button class="ghost" id="remindLater">Plus tard</button></div>
+  </div>
+  <div class="card quick">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+      <h2 style="margin:0">Vente rapide</h2>
+      <span class="label">Aujourd'hui : <strong id="sTodayBig">0 DA</strong></span>
+    </div>
+    <div class="field" style="margin-top:10px"><label for="sText">Écris la vente comme un message (ex : سدر 2 كغ 11000 remise 500)</label>
+      <div class="row" style="margin-top:4px"><input type="text" id="sText" placeholder="ex : زيت بدراوي 3 900 remise 50" autocomplete="off"><button class="ghost" id="sParse">Remplir</button></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label for="sSearch">Produit (tape 1, 2 ou 3 lettres)</label>Produit (tape 1, 2 ou 3 lettres)</label>
+      <input type="text" id="sSearch" autocomplete="off" placeholder="ex : سدر، زيت، تلبي...">
+      <div id="sSug" class="sug"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="sUnitPrice">Prix unitaire (DA) : modifie pour une remise</label><input type="number" id="sUnitPrice" min="0" step="10"></div>
+      <div class="field"><label for="sMode">Je saisis</label>
+        <select id="sMode"><option value="amount">Montant encaissé (DA)</option><option value="qty">Quantité ou poids</option></select></div>
+    </div>
+    <div class="row"><div class="field"><label for="sValue">Valeur</label><input type="number" id="sValue" min="0" step="0.01" inputmode="decimal"></div></div>
+    <div class="row">
+      <div class="field"><label for="sPay">Mode de paiement</label><select id="sPay"><option value="cash">Comptant</option><option value="credit">Crédit (client)</option></select></div>
+      <div class="field"><label for="sCust">Client (si crédit)</label><input type="text" id="sCust" list="custNames" placeholder="nom du client" autocomplete="off"><datalist id="custNames"></datalist></div>
+    </div>
+    <div class="chips" id="sChips"></div>
+    <div class="preview" id="sPreview"></div>
+    <div class="label" id="sEst" style="margin-top:6px;line-height:1.7"></div>
+    <div class="row">
+      <input type="text" id="sNote" placeholder="Client / remarque (optionnel)">
+      <button id="sSave">Valider la vente</button>
+      <button class="ghost" id="sCancel">Annuler</button>
+    </div>
+  </div>
+  <div class="card" id="ctrl"></div>
+  <div class="stats">
+    <div class="card"><div class="label">Valeur du stock (achat)</div><div class="big" id="kCost">—</div></div>
+    <div class="card"><div class="label">Valeur de vente</div><div class="big" id="kSale">—</div></div>
+    <div class="card"><div class="label">Produits</div><div class="big" id="kCount">—</div></div>
+    <div class="card"><div class="label">Alertes</div><div class="big" id="kAlerts">—</div></div>
+  </div>
+  <div class="card">
+    <h2>Alertes de stock bas</h2>
+    <div id="alerts"></div>
+  </div>
+  <div class="card">
+    <h2>Tous les produits</h2>
+    <div id="dashList"></div>
+  </div>
+</section>
+
+<section id="tab-prod" class="hidden">
+  <div class="card">
+    <h2>Marges garanties</h2>
+    <div class="label" style="margin-bottom:8px">Prix plancher = prix d'achat × (1 + marge minimale). Une remise ne peut jamais faire descendre le prix en dessous de ce plancher, donc le bénéfice minimum est garanti sur chaque vente.</div>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="mMin">Marge minimale garantie (%)</label><input type="number" id="mMin" min="0" step="1"></div>
+      <div class="field"><label for="mTarget">Marge désirée (%) pour l'estimation</label><input type="number" id="mTarget" min="0" step="1"></div>
+    </div>
+    <div class="row"><button id="mSaveCfg">Enregistrer les marges</button></div>
+    <div class="label" style="margin-top:8px">Recommandation : marge minimale 25 % (couvre les charges, les pertes et les retards de paiement), marge désirée 40 %.</div>
+  </div>
+  <div class="card">
+    <h2 id="pTitle">Ajouter un produit</h2>
+    <input type="hidden" id="pId">
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="pName">Nom</label><input type="text" id="pName" placeholder="Ex : عسل سدر"></div>
+      <div class="field"><label for="pUnit">Unité</label>
+        <select id="pUnit"><option value="kg">Au poids (ميزان) : kg</option><option value="unité">Unité normale</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="pStock">Stock actuel</label><input type="number" id="pStock" min="0" step="0.1" value="0"></div>
+      <div class="field"><label for="pMin">Seuil d'alerte</label><input type="number" id="pMin" min="0" step="0.1" value="5"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="pBuy">Prix d'achat (DA)</label><input type="number" id="pBuy" min="0" step="10" value="0"></div>
+      <div class="field"><label for="pSell">Prix de vente (DA)</label><input type="number" id="pSell" min="0" step="10" value="0"></div>
+    </div>
+    <div class="card" style="padding:10px;margin:0 0 10px">
+      <div id="pHint" class="label"></div>
+      <div class="row" style="margin-top:6px"><button class="small" id="pUseSug">Utiliser le prix garanti</button><button class="small ghost" id="pUseDesired">Utiliser le prix désiré</button></div>
+    </div>
+    <div class="row"><button id="pSave">Enregistrer</button><button class="ghost" id="pCancel">Annuler</button></div>
+  </div>
+  <div class="card"><h2>Liste</h2><div id="prodList"></div></div>
+</section>
+
+<section id="tab-mov" class="hidden">
+  <div class="card">
+    <h2>Nouveau mouvement</h2>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="mType">Type</label>
+        <select id="mType"><option value="in">Entrée (achat)</option><option value="out">Sortie (vente / perte)</option></select></div>
+      <div class="field"><label for="mProd">Produit</label><select id="mProd"></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="mQty">Quantité</label><input type="number" id="mQty" min="0" step="0.1"></div>
+      <div class="field"><label for="mDate">Date</label><input type="date" id="mDate"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="mNote">Note</label><input type="text" id="mNote" placeholder="Facture, client, perte..."></div>
+    </div>
+    <div class="row"><button id="mSave">Enregistrer</button></div>
+  </div>
+  <div class="card"><h2>Historique</h2><div id="movList"></div></div>
+</section>
+
+<section id="tab-buy" class="hidden">
+  <div class="card">
+    <h2>Bon d'achat</h2>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="bSup">Fournisseur</label><input type="text" id="bSup" list="supNames" placeholder="Nom du fournisseur"><datalist id="supNames"></datalist></div>
+      <div class="field"><label for="bDate">Date</label><input type="date" id="bDate"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="bProd">Produit</label><select id="bProd"></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="bQty">Quantité</label><input type="number" id="bQty" min="0" step="0.01"></div>
+      <div class="field"><label for="bPrice">Prix d'achat unitaire (DA)</label><input type="number" id="bPrice" min="0" step="10"></div>
+    </div>
+    <div class="row"><button class="ghost" id="bAdd">Ajouter la ligne</button></div>
+    <div id="bLines" style="margin-top:8px"></div>
+    <div class="row"><input type="text" id="bNote" placeholder="Note (n° de facture...)"></div>
+    <div class="row">
+      <div class="field"><label for="bPhoto">Photo du bon (caméra)</label><input type="file" id="bPhoto" accept="image/*" capture="environment"></div>
+    </div>
+    <div id="bPreview"></div>
+    <div class="row"><button id="bSave">Valider le bon</button><button class="ghost" id="bClear">Vider</button></div>
+    <div class="label" style="margin-top:8px">Le total est ajouté comme dette au fournisseur (dans Dettes fournisseurs), et les quantités sont ajoutées au stock.</div>
+  </div>
+  <div class="card"><h2>Bons enregistrés</h2><div id="bList"></div></div>
+</section>
+<section id="tab-sales" class="hidden">
+  <div class="card">
+    <h2>Historique des ventes</h2>
+    <div class="row" style="margin-top:0">
+      <button class="ghost small" id="hPrev">◀ Précédent</button>
+      <input type="date" id="hDay">
+      <button class="ghost small" id="hNext">Suivant ▶</button>
+    </div>
+    <div class="stats" style="margin-top:12px">
+      <div><div class="label">Total de la journée</div><div class="big in" id="hTotal">0 DA</div></div>
+      <div><div class="label">Nombre de ventes</div><div class="big" id="hCount">0</div></div>
+    </div>
+    <div class="label" style="margin-top:8px" id="hSub"></div>
+  </div>
+  <div class="card"><h2>Ventes de cette journée</h2><div id="sList"></div></div>
+  <div class="card"><h2>Journées précédentes</h2><div id="hDays"></div></div>
+</section>
+<section id="tab-cash" class="hidden">
+  <div class="card">
+    <h2>Caisse (liquidité)</h2>
+    <div class="big" id="cBal">—</div>
+    <div class="label" id="cDetail" style="margin-top:6px"></div>
+  </div>
+  <div class="card">
+    <h2>Solde de départ</h2>
+    <div class="label" style="margin-bottom:8px">Entre le solde réel que tu as en caisse à une date. Tout ce qui vient après (ventes, dépenses, paiements aux fournisseurs) est calculé automatiquement.</div>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="cDate2">À partir du</label><input type="date" id="cDate2"></div>
+      <div class="field"><label for="cBal2">Solde réel (DA)</label><input type="number" id="cBal2" step="100"></div>
+    </div>
+    <div class="row"><button id="cSet" class="ghost">Enregistrer le solde</button></div>
+  </div>
+  <div class="card">
+    <h2>Dépense</h2>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="eLabel">Motif</label><input type="text" id="eLabel" placeholder="Loyer, électricité, transport..."></div>
+      <div class="field"><label for="eAmt">Montant (DA)</label><input type="number" id="eAmt" min="0" step="100"></div>
+    </div>
+    <div class="row"><div class="field"><label for="eDate">Date</label><input type="date" id="eDate"></div></div>
+    <div class="row"><button id="eSave">Enregistrer la dépense</button></div>
+    <div id="eList" style="margin-top:8px"></div>
+  </div>
+</section>
+<section id="tab-cli" class="hidden">
+  <div class="card">
+    <h2>Nouveau client</h2>
+    <div class="row" style="margin-top:0"><input type="text" id="cName" placeholder="Nom du client"><button id="cAdd">Ajouter le client</button></div>
+  </div>
+  <div class="card"><h2>Clients et montants dus</h2><div id="cList"></div></div>
+  <div class="card">
+    <h2>Opérations sur un client</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="cSel">Client</label><select id="cSel"></select></div></div>
+    <div class="row">
+      <div class="field"><label for="cAmt">Montant (DA)</label><input type="number" id="cAmt" min="0" step="100"></div>
+      <div class="field"><label for="cDesc">Description</label><input type="text" id="cDesc" placeholder="Ex : ancienne dette, sacs de miel"></div>
+    </div>
+    <div class="row"><button id="cDebt">Ajouter une dette</button><button class="ghost" id="cPay">Paiement reçu</button></div>
+    <div class="label" id="cBalTxt" style="margin-top:8px"></div>
+    <div id="cHist" style="margin-top:8px"></div>
+  </div>
+</section>
+<section id="tab-sync" class="hidden">
+  <div class="card">
+    <h2>Synchronisation Google Sheets</h2>
+    <div class="label" style="margin-bottom:8px">Colle ici l'adresse de ton Apps Script (celle qui finit par /exec). Les données se mettent à jour entre tous les appareils qui ont la même adresse.</div>
+    <div class="row" style="margin-top:0"><input type="text" id="syncUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div class="row"><button id="syncSave">Enregistrer</button><button class="ghost" id="syncNow">Synchroniser maintenant</button><button class="danger" id="syncOff">Désactiver</button></div>
+    <div class="label" id="syncStatus" style="margin-top:10px">Non configuré.</div>
+  </div>
+</section>
+<section id="tab-data" class="hidden">
+  <div class="card">
+    <h2>Sauvegarde</h2>
+    <div class="row" style="margin-top:0"><button class="ghost" id="exp">Exporter (copier)</button></div>
+    <div class="row"><button id="xlsBtn">Exporter pour Excel (4 fichiers)</button></div>
+    <div class="row"><button id="xlsxExp">Télécharger Excel modifiable (.xlsx)</button></div>
+    <div class="row"><button class="ghost" id="progExp">Exporter le programme complet (.html)</button></div>
+    <div class="label" style="margin-top:4px">Le programme complet (sans les données) pour l'installer sur un autre appareil ou le donner à quelqu'un. Les données se transmettent avec le fichier Excel.</div>
+    <div class="row"><select id="xlMode"><option value="replace">Remplacer toutes les données</option><option value="merge">Ajouter seulement les nouvelles données</option></select></div>
+    <div class="row"><button class="ghost" id="xlsxImpBtn">Importer un fichier Excel modifié</button><input type="file" id="xlsxFile" accept=".xlsx" class="hidden"></div>
+    <div class="label" style="margin-top:6px">Télécharge le fichier, modifie-le dans Excel sur ordinateur, puis réimporte-le ici. Le fichier importé remplace les données actuelles.</div>
+    <div class="row"><input type="password" id="xlPw" placeholder="Code pour verrouiller le fichier Excel" autocomplete="new-password"><button class="ghost" id="xlPwSave">Enregistrer le code</button></div>
+    <div class="label" style="margin-top:6px">Le fichier Excel sera verrouillé avec ce code. Modifiable seulement : quantités, prix d'achat et de vente, montants des dettes, ajout et suppression (case « Supprimer » = 1). Télécharge à nouveau le fichier après avoir enregistré le code.</div>
+    <div class="label" style="margin-top:6px">Télécharge 4 fichiers CSV (Stock, Ventes, Dettes, Situation) à ouvrir avec Excel, à mettre dans un dossier et envoyer par email.</div>
+    <div class="row"><textarea id="io" rows="3" placeholder="Colle une sauvegarde ici pour la restaurer"></textarea></div>
+    <div class="row"><button class="ghost" id="imp">Restaurer</button><button class="danger" id="rst">Réinitialiser</button></div>
+  </div>
+</section>
+
+<footer>Données gardées sur cet appareil. Utilise "Exporter" pour les garder ailleurs.</footer>
+</main></div>
+<div id="view-debts" class="hidden"><main>
+<h1>Dettes fournisseurs</h1>
+<div class="sub">CALORIE BOOST</div>
+
+<div class="tabs">
+  <button class="dtab on" data-tab="dash">Tableau de bord</button>
+  <button class="dtab" data-tab="sup">Fournisseurs</button>
+  <button class="dtab" data-tab="pay">Paiements mensuels</button>
+  <button class="dtab" data-tab="add">Ajouter</button>
+</div>
+
+<!-- Tableau de bord -->
+<section id="dtab-dash">
+  <div class="card">
+    <div class="label">Total restant</div>
+    <div class="big" id="kTotal">—</div>
+    <div class="bar"><div id="kBar"></div></div>
+    <div class="label" id="kBarLabel"></div>
+  </div>
+  <div class="stats">
+    <div class="card stat"><div class="label">Ce mois payé</div><div class="big" id="kMonthPaid">—</div></div>
+    <div class="card stat"><div class="label">Objectif mensuel</div><div class="big" id="kTarget">—</div></div>
+    <div class="card stat"><div class="label">Fournisseurs en retard</div><div class="big" id="kLate">—</div></div>
+    <div class="card stat"><div class="label">Mois restants (plan)</div><div class="big" id="kMonths">—</div></div>
+  </div>
+  <div class="card">
+    <h2>Plan de remboursement</h2>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="planMonths">Nombre de mois</label><input type="number" id="planMonths" min="1" value="6"></div>
+    </div>
+    <div id="planOut" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <h2>Statut par fournisseur</h2>
+    <div id="statusList"></div>
+  </div>
+</section>
+
+<!-- Liste fournisseurs -->
+<section id="dtab-sup" class="hidden">
+  <div id="supList"></div>
+</section>
+
+<!-- Paiements mensuels -->
+<section id="dtab-pay" class="hidden">
+  <div class="card">
+    <h2>Enregistrer un paiement</h2>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="pSup">Fournisseur</label><select id="pSup"></select></div>
+      <div class="field"><label for="pAmt">Montant (DA)</label><input type="number" id="pAmt" min="0" step="100"></div>
+      <div class="field"><label for="pDate">Date</label><input type="date" id="pDate"></div>
+    </div>
+    <div class="row"><input type="text" id="pNote" placeholder="Note (optionnel)"><button id="pSave">Enregistrer</button></div>
+  </div>
+  <div class="card">
+    <h2>Historique par mois</h2>
+    <div id="monthList"></div>
+  </div>
+  <div class="card">
+    <h2>Derniers paiements</h2>
+    <div id="payList"></div>
+  </div>
+</section>
+
+<!-- Ajouter / modifier -->
+<section id="dtab-add" class="hidden">
+  <div class="card">
+    <h2 id="formTitle">Ajouter un fournisseur</h2>
+    <input type="hidden" id="fId">
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="fName">Nom</label><input type="text" id="fName" placeholder="Nom du fournisseur"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="fNote">Note (produits)</label><input type="text" id="fNote" placeholder="Ex : miel, herbes"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="fDue">Jour d'échéance du mois</label><input type="number" id="fDue" min="1" max="31" value="10"></div>
+      <div class="field"><label for="fTerms">Délai de paiement (jours)</label><input type="number" id="fTerms" min="0" value="30"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="fDebt">Dette initiale (DA)</label><input type="number" id="fDebt" min="0" step="100" value="0"></div>
+    </div>
+    <div class="row">
+      <button id="fSave">Enregistrer le fournisseur</button>
+      <button class="ghost" id="fCancel">Annuler</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Ajouter une dette (nouvel achat à crédit)</h2>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="dSup">Fournisseur</label><select id="dSup"></select></div>
+      <div class="field"><label for="dAmt">Montant (DA)</label><input type="number" id="dAmt" min="0" step="100"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="dDate">Date</label><input type="date" id="dDate"></div>
+      <div class="field"><label for="dDesc">Description</label><input type="text" id="dDesc" placeholder="Ex : bon de livraison n°..."></div>
+    </div>
+    <div class="row"><button id="dSave">Ajouter la dette</button></div>
+  </div>
+  <div class="card">
+    <h2>Corriger un montant</h2>
+    <div class="label" style="margin-bottom:8px">Utilise cette option pour ajuster une erreur de saisie (ex : un montant qui ne correspond pas au fichier).</div>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="cSup">Fournisseur</label><select id="cSup"></select></div>
+      <div class="field"><label for="cAmt">Nouveau restant (DA)</label><input type="number" id="cAmt" min="0" step="100"></div>
+    </div>
+    <div class="row"><button id="cSave" class="ghost">Appliquer la correction</button></div>
+  </div>
+  <div class="card">
+    <h2>Sauvegarde</h2>
+    <div class="row" style="margin-top:0"><button class="ghost" id="exportBtn">Exporter (copier)</button></div>
+    <div class="row"><textarea id="ioBox" rows="3" placeholder="Colle ici une sauvegarde pour la restaurer"></textarea></div>
+    <div class="row"><button class="ghost" id="importBtn">Restaurer</button><button class="danger" id="resetBtn">Réinitialiser</button></div>
+  </div>
+</section>
+
+<footer>Les données sont gardées sur cet appareil. Utilise "Exporter" pour les garder ailleurs.</footer>
+</main></div>
+<script>
+
+const KEY = "calorie-boost-stock-v1";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Math.round(n).toLocaleString("fr-FR") + " DA";
+const num = n => Math.round(n * 10) / 10;
+const uid = () => Math.random().toString(36).slice(2, 10);
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+
+function seed() {
+  return {
+    products: [{"id": "p003", "name": "عسل البرتقال", "unit": "kg", "stock": 12.3, "min": 10, "buy": 1500.0, "sell": 0}, {"id": "p004", "name": "عسل شوك الإبل", "unit": "kg", "stock": 5.5, "min": 10, "buy": 2500.0, "sell": 0}, {"id": "p005", "name": "عسل قصبر", "unit": "kg", "stock": 1.0, "min": 10, "buy": 3000.0, "sell": 0}, {"id": "p006", "name": "عسل الأسود", "unit": "kg", "stock": 7.0, "min": 10, "buy": 3000.0, "sell": 0}, {"id": "p007", "name": "عسل الغابة", "unit": "kg", "stock": 3.0, "min": 10, "buy": 3000.0, "sell": 0}, {"id": "p008", "name": "عسل الحبة السوداء", "unit": "kg", "stock": 0.5, "min": 10, "buy": 3500.0, "sell": 0}, {"id": "p009", "name": "عسل السدر", "unit": "kg", "stock": 52.0, "min": 10, "buy": 3500.0, "sell": 0}, {"id": "p010", "name": "عسل جبلي", "unit": "kg", "stock": 19.5, "min": 10, "buy": 3500.0, "sell": 0}, {"id": "p011", "name": "عسل خزامى", "unit": "kg", "stock": 17.3, "min": 10, "buy": 2500.0, "sell": 0}, {"id": "p012", "name": "عسل ناضورة", "unit": "kg", "stock": 16.5, "min": 10, "buy": 2000.0, "sell": 0}, {"id": "p013", "name": "عسل جرجير", "unit": "kg", "stock": 5.0, "min": 10, "buy": 1800.0, "sell": 0}, {"id": "p014", "name": "عسل برتقال جرجير", "unit": "kg", "stock": 10.3, "min": 10, "buy": 1500.0, "sell": 0}, {"id": "p015", "name": "عسل مرار", "unit": "kg", "stock": 50.0, "min": 10, "buy": 2500.0, "sell": 0}, {"id": "p016", "name": "عسل اللبينة", "unit": "kg", "stock": 5.0, "min": 10, "buy": 2500.0, "sell": 0}, {"id": "p017", "name": "عسل شوكيات", "unit": "kg", "stock": 41.0, "min": 10, "buy": 2000.0, "sell": 0}, {"id": "p018", "name": "دهان سنام أنثى الجمل (450غ)", "unit": "unité", "stock": 4.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p019", "name": "مشروب الجينسنغ", "unit": "unité", "stock": 3.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p020", "name": "مشروب Bioapétit", "unit": "unité", "stock": 5.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p021", "name": "مشروب محفز شهية للأطفال", "unit": "unité", "stock": 2.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p022", "name": "مشروب عكبر", "unit": "unité", "stock": 3.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p023", "name": "عسل الوسيلة", "unit": "kg", "stock": 2.0, "min": 10, "buy": 250.0, "sell": 0}, {"id": "p024", "name": "مشروب شيح", "unit": "unité", "stock": 3.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p025", "name": "مشروب القولون + بابونج خزامى", "unit": "unité", "stock": 2.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p026", "name": "مشروب الجنكة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p027", "name": "مشروب Stop Toux", "unit": "unité", "stock": 2.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p028", "name": "إكسير (شامبو + زيت)", "unit": "unité", "stock": 4.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p029", "name": "زبدة الشيا", "unit": "unité", "stock": 3.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p030", "name": "تابيرال", "unit": "unité", "stock": 7.0, "min": 2, "buy": 450.0, "sell": 0}, {"id": "p031", "name": "زيت حبة السوداء", "unit": "unité", "stock": 1.0, "min": 2, "buy": 450.0, "sell": 0}, {"id": "p032", "name": "منحف خدود", "unit": "unité", "stock": 1.0, "min": 2, "buy": 400.0, "sell": 0}, {"id": "p033", "name": "عسل بريوت", "unit": "kg", "stock": 3.0, "min": 10, "buy": 500.0, "sell": 0}, {"id": "p034", "name": "زيوت كابتن", "unit": "unité", "stock": 12.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p035", "name": "صابون بالعسل", "unit": "unité", "stock": 3.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p036", "name": "زيت الجوجوبا", "unit": "unité", "stock": 3.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p037", "name": "زيت الصويا", "unit": "unité", "stock": 2.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p038", "name": "زيت جوز الهند عادي", "unit": "unité", "stock": 2.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p039", "name": "زيت اللوز الحلو", "unit": "unité", "stock": 1.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p040", "name": "زيت جوز الهند هماني", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1100.0, "sell": 0}, {"id": "p041", "name": "زيت حبة السوداء أبو الجمل", "unit": "unité", "stock": 4.0, "min": 2, "buy": 1120.0, "sell": 0}, {"id": "p042", "name": "زيت بلبل كبيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p043", "name": "زيت بلبل صغيرة", "unit": "unité", "stock": 1.0, "min": 2, "buy": 800.0, "sell": 0}, {"id": "p044", "name": "مسمنة البغدادية", "unit": "unité", "stock": 2.0, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p045", "name": "عصفر", "unit": "unité", "stock": 6.0, "min": 2, "buy": 100.0, "sell": 0}, {"id": "p046", "name": "زيت الحشيش الأفغاني", "unit": "unité", "stock": 4.0, "min": 2, "buy": 600.0, "sell": 0}, {"id": "p047", "name": "زيت إكليل الجبل مسك اليمن", "unit": "unité", "stock": 1.0, "min": 2, "buy": 600.0, "sell": 0}, {"id": "p048", "name": "حليب الصويا", "unit": "unité", "stock": 1.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p049", "name": "زيت الأكبي", "unit": "unité", "stock": 1.0, "min": 2, "buy": 600.0, "sell": 0}, {"id": "p050", "name": "حلبة رومانية كبيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 1150.0, "sell": 0}, {"id": "p051", "name": "زيت فريدم", "unit": "unité", "stock": 5.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p052", "name": "محلب الشافي", "unit": "unité", "stock": 1.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p053", "name": "الكثيراء كبيرة", "unit": "unité", "stock": 3.0, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p054", "name": "الكثيراء صغيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 650.0, "sell": 0}, {"id": "p055", "name": "زيت اللوز المر", "unit": "unité", "stock": 5.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p056", "name": "دهان الحنظل كابتن", "unit": "unité", "stock": 5.0, "min": 2, "buy": 700.0, "sell": 0}, {"id": "p057", "name": "تكروايت", "unit": "unité", "stock": 3.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p058", "name": "جينكا عشبة", "unit": "unité", "stock": 4.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p059", "name": "عشبة الخيماري", "unit": "unité", "stock": 50.0, "min": 2, "buy": 50.0, "sell": 0}, {"id": "p060", "name": "مربى الموتر كبيرة", "unit": "unité", "stock": 8.0, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p061", "name": "ربى الموتر", "unit": "unité", "stock": 2.0, "min": 2, "buy": 650.0, "sell": 0}, {"id": "p062", "name": "سترونق بودي (Strong Body)", "unit": "unité", "stock": 3.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p063", "name": "بذور الراحة", "unit": "unité", "stock": 1.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p064", "name": "تيزانة جاردن بيو", "unit": "unité", "stock": 1.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p065", "name": "زبدة السكري", "unit": "unité", "stock": 1.0, "min": 2, "buy": 0.0, "sell": 0}, {"id": "p066", "name": "خييرات", "unit": "unité", "stock": 2.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p067", "name": "مربى جيمكا", "unit": "unité", "stock": 2.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p068", "name": "المشاط", "unit": "unité", "stock": 6.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p069", "name": "الكتم", "unit": "unité", "stock": 12.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p070", "name": "أنديجو", "unit": "unité", "stock": 2.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p071", "name": "تبريمة", "unit": "unité", "stock": 3.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p072", "name": "أعشاب العروس", "unit": "unité", "stock": 3.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p073", "name": "عسل الجينسنغ كبيرة", "unit": "kg", "stock": 7.0, "min": 10, "buy": 1650.0, "sell": 0}, {"id": "p074", "name": "عسل الجينسينغ صغيرة", "unit": "kg", "stock": 3.0, "min": 10, "buy": 1100.0, "sell": 0}, {"id": "p075", "name": "ماتشا ريم", "unit": "unité", "stock": 9.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p076", "name": "تيزانة رعي الحمام", "unit": "unité", "stock": 5.0, "min": 2, "buy": 150.0, "sell": 0}, {"id": "p077", "name": "تلبينة أبراج", "unit": "unité", "stock": 10.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p078", "name": "تلبينة وقاري", "unit": "unité", "stock": 17.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p079", "name": "تلبينة", "unit": "unité", "stock": 9.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p080", "name": "أذناب الكرز", "unit": "unité", "stock": 16.0, "min": 2, "buy": 100.0, "sell": 0}, {"id": "p081", "name": "شاي فواكه الغابة", "unit": "unité", "stock": 3.0, "min": 2, "buy": 170.0, "sell": 0}, {"id": "p082", "name": "شاب توارڨ", "unit": "unité", "stock": 8.0, "min": 2, "buy": 150.0, "sell": 0}, {"id": "p083", "name": "زنجبيل شيف", "unit": "unité", "stock": 1.0, "min": 2, "buy": 150.0, "sell": 0}, {"id": "p084", "name": "زنجبيل كبير", "unit": "unité", "stock": 25.0, "min": 2, "buy": 140.0, "sell": 0}, {"id": "p085", "name": "شاي البراد كبيرة", "unit": "unité", "stock": 1.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p086", "name": "شاي البراد صغيرة", "unit": "unité", "stock": 4.0, "min": 2, "buy": 150.0, "sell": 0}, {"id": "p087", "name": "شاي ديلماح", "unit": "unité", "stock": 8.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p088", "name": "ماتشا أصلية", "unit": "unité", "stock": 9.0, "min": 2, "buy": 1800.0, "sell": 0}, {"id": "p089", "name": "سكر ماجيك لايت", "unit": "unité", "stock": 27.0, "min": 2, "buy": 130.0, "sell": 0}, {"id": "p090", "name": "ملح إنجليزي", "unit": "unité", "stock": 1.0, "min": 2, "buy": 3500.0, "sell": 0}, {"id": "p091", "name": "ملح الهيمالايا كبيرة", "unit": "unité", "stock": 8.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p092", "name": "ملح الهيمالايا صغيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p093", "name": "شاي الشهية", "unit": "unité", "stock": 75.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p094", "name": "شاي الهوى", "unit": "unité", "stock": 3.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p095", "name": "شاي تارڨي", "unit": "unité", "stock": 6.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p096", "name": "شاي أحمر", "unit": "unité", "stock": 6.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p097", "name": "شاي مروان", "unit": "unité", "stock": 2.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p098", "name": "شاي براد حديد كبيرة", "unit": "unité", "stock": 3.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p099", "name": "شاي براد حديد صغيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p100", "name": "زنجبيل كابتن", "unit": "unité", "stock": 4.0, "min": 2, "buy": 150.0, "sell": 0}, {"id": "p101", "name": "مسحوق الخروب", "unit": "unité", "stock": 2.0, "min": 2, "buy": 170.0, "sell": 0}, {"id": "p102", "name": "زبيب أسود", "unit": "unité", "stock": 5.5, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p103", "name": "شاي الأرقم", "unit": "unité", "stock": 32.0, "min": 2, "buy": 400.0, "sell": 0}, {"id": "p104", "name": "تلبينة الباسقة", "unit": "unité", "stock": 11.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p105", "name": "سكر التمر العادي", "unit": "unité", "stock": 8.0, "min": 2, "buy": 150.0, "sell": 0}, {"id": "p106", "name": "سكر التمر الباسقة", "unit": "unité", "stock": 19.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p107", "name": "أرز تايلاندي أسمر", "unit": "unité", "stock": 9.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p108", "name": "شوبان بيو", "unit": "unité", "stock": 5.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p109", "name": "شوفان ماجيكو", "unit": "unité", "stock": 3.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p110", "name": "مسحوق الشوفان", "unit": "unité", "stock": 18.0, "min": 2, "buy": 550.0, "sell": 0}, {"id": "p111", "name": "قرانولا نوتريفيت", "unit": "unité", "stock": 42.0, "min": 2, "buy": 900.0, "sell": 0}, {"id": "p112", "name": "رويدلة التمر الباسقة كبيرة", "unit": "unité", "stock": 10.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p113", "name": "رويدلة التمر الباسقة صغيرة", "unit": "unité", "stock": 5.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p114", "name": "ماء زمزم صغيرة", "unit": "unité", "stock": 14.0, "min": 2, "buy": 450.0, "sell": 0}, {"id": "p115", "name": "ماء زمزم كبيرة", "unit": "unité", "stock": 3.0, "min": 2, "buy": 3500.0, "sell": 0}, {"id": "p116", "name": "قرانولا الباسقة", "unit": "unité", "stock": 4.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p117", "name": "باك توابل مغنية", "unit": "unité", "stock": 11.0, "min": 2, "buy": 600.0, "sell": 0}, {"id": "p118", "name": "زيت زيتون بدراوي 3 ليتر", "unit": "unité", "stock": 3.0, "min": 2, "buy": 2900.0, "sell": 0}, {"id": "p119", "name": "زيت زيتون بكر ممتاز 0.5 ليتر", "unit": "unité", "stock": 17.0, "min": 2, "buy": 650.0, "sell": 0}, {"id": "p120", "name": "زيت زيتون بكر ممتاز 0.25 ليتر", "unit": "unité", "stock": 22.0, "min": 2, "buy": 320.0, "sell": 0}, {"id": "p121", "name": "زيت الزيتون بكر ممتاز 0.75 ليتر", "unit": "unité", "stock": 1.0, "min": 2, "buy": 900.0, "sell": 0}, {"id": "p122", "name": "زيت الزيتون بغلية بكر ممتاز 0.25 ليتر", "unit": "unité", "stock": 5.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p123", "name": "زيت الزيتون إفري بكر 0.75 ليتر", "unit": "unité", "stock": 11.0, "min": 2, "buy": 900.0, "sell": 0}, {"id": "p124", "name": "زيت الزيتون إفري كوفري", "unit": "unité", "stock": 4.0, "min": 2, "buy": 1300.0, "sell": 0}, {"id": "p125", "name": "زيت الزيتون بدراوي البكر 2 ليتر", "unit": "unité", "stock": 5.0, "min": 2, "buy": 1900.0, "sell": 0}, {"id": "p126", "name": "زيت الزيتون قطرة الخضراء 1ل", "unit": "unité", "stock": 7.0, "min": 2, "buy": 900.0, "sell": 0}, {"id": "p127", "name": "زيت الزيتون بدراوي بكر 0.75ل", "unit": "unité", "stock": 13.0, "min": 2, "buy": 950.0, "sell": 0}, {"id": "p128", "name": "زيت الزيتون بدراوي بكر 0.5ل", "unit": "unité", "stock": 18.0, "min": 2, "buy": 650.0, "sell": 0}, {"id": "p129", "name": "زيت الزيتون بدراوي بكر 0.25ل", "unit": "unité", "stock": 20.0, "min": 2, "buy": 320.0, "sell": 0}, {"id": "p130", "name": "زيت الزيتون بغلية بكر 0.75ل", "unit": "unité", "stock": 2.0, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p131", "name": "زيت الزيتون بغلية بكر 0.25ل", "unit": "unité", "stock": 7.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p132", "name": "زيت الزيتون بغلية بكر 0.5ل", "unit": "unité", "stock": 3.0, "min": 2, "buy": 650.0, "sell": 0}, {"id": "p133", "name": "خل التفاح العضوي كبير", "unit": "unité", "stock": 8.0, "min": 2, "buy": 550.0, "sell": 0}, {"id": "p134", "name": "خل التفاح العضوي صغير", "unit": "unité", "stock": 4.0, "min": 2, "buy": 400.0, "sell": 0}, {"id": "p135", "name": "لوز ابيض 1كغ", "unit": "unité", "stock": 3.0, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p136", "name": "ميلونج", "unit": "unité", "stock": 1.0, "min": 2, "buy": 2200.0, "sell": 0}, {"id": "p137", "name": "قرقاع", "unit": "unité", "stock": 3.0, "min": 2, "buy": 1600.0, "sell": 0}, {"id": "p138", "name": "كاوكاو كراميل 2.5 كغ", "unit": "unité", "stock": 1.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p139", "name": "كاوكاو مغلف 2 كغ", "unit": "unité", "stock": 1.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p140", "name": "زريعة بيضاء 1.5 كغ", "unit": "unité", "stock": 2.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p141", "name": "ماء الزعتر", "unit": "unité", "stock": 5.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p142", "name": "ماء الشيح", "unit": "unité", "stock": 5.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p143", "name": "ماء الورد هيماني", "unit": "unité", "stock": 4.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p144", "name": "خل التفاح الباسقة", "unit": "unité", "stock": 6.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p145", "name": "ماء الورد أبوسالم كبيرة", "unit": "unité", "stock": 3.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p146", "name": "ماء الورد أبوسالم صغيرة", "unit": "unité", "stock": 4.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p147", "name": "خل التين الشوكي", "unit": "unité", "stock": 7.0, "min": 2, "buy": 400.0, "sell": 0}, {"id": "p148", "name": "زبدة الفول السوداني الباسقة كبيرة", "unit": "unité", "stock": 9.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p149", "name": "زبدة الفول السوداني الباسقة صغيرة", "unit": "unité", "stock": 4.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p150", "name": "زبدة الفول السوداني هازار", "unit": "unité", "stock": 3.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p151", "name": "زبدة الفول السوداني تاستي", "unit": "unité", "stock": 7.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p152", "name": "زبدة الفول السوداني نيتريفيت", "unit": "unité", "stock": 6.0, "min": 2, "buy": 600.0, "sell": 0}, {"id": "p153", "name": "دبس التمر الباسقة 450غ", "unit": "unité", "stock": 10.0, "min": 2, "buy": 450.0, "sell": 0}, {"id": "p154", "name": "عسلة التمر هازار", "unit": "kg", "stock": 4.0, "min": 10, "buy": 200.0, "sell": 0}, {"id": "p155", "name": "دبس الخروب الباسقة", "unit": "unité", "stock": 10.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p156", "name": "دبس التمر أصيل", "unit": "unité", "stock": 9.0, "min": 2, "buy": 20.0, "sell": 0}, {"id": "p157", "name": "دبس التمر الباسقة 330غ", "unit": "unité", "stock": 7.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p158", "name": "دبس التمر 700غ", "unit": "unité", "stock": 8.0, "min": 2, "buy": 350.0, "sell": 0}, {"id": "p159", "name": "طحينة السمسم باسقة كبيرة", "unit": "unité", "stock": 8.0, "min": 2, "buy": 450.0, "sell": 0}, {"id": "p160", "name": "طحينة السمسم باسقة صغيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p161", "name": "خل التمر باسقة", "unit": "unité", "stock": 11.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p162", "name": "لباب التمر كبيرة", "unit": "unité", "stock": 10.0, "min": 2, "buy": 550.0, "sell": 0}, {"id": "p163", "name": "لباب التمر صغيرة", "unit": "unité", "stock": 6.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p164", "name": "دبس الخروب كروما", "unit": "unité", "stock": 7.0, "min": 2, "buy": 550.0, "sell": 0}, {"id": "p165", "name": "كورات الطاقة نيتريفيت", "unit": "unité", "stock": 72.0, "min": 2, "buy": 60.0, "sell": 0}, {"id": "p166", "name": "مربى الزنجبيل", "unit": "unité", "stock": 4.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p167", "name": "قهوة التمر", "unit": "unité", "stock": 4.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p168", "name": "تمر معجون", "unit": "unité", "stock": 7.0, "min": 2, "buy": 100.0, "sell": 0}, {"id": "p169", "name": "حبوب اللقاح", "unit": "unité", "stock": 17.0, "min": 2, "buy": 1500.0, "sell": 0}, {"id": "p170", "name": "تمر عجوة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 3500.0, "sell": 0}, {"id": "p171", "name": "تين مجفف", "unit": "unité", "stock": 7.0, "min": 2, "buy": 600.0, "sell": 0}, {"id": "p172", "name": "تين شوكي", "unit": "unité", "stock": 6.0, "min": 2, "buy": 600.0, "sell": 0}, {"id": "p173", "name": "حبات غذاء الملكات", "unit": "unité", "stock": 3.0, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p174", "name": "شهدة العسل", "unit": "unité", "stock": 4.0, "min": 2, "buy": 3000.0, "sell": 0}, {"id": "p175", "name": "لوز صامط", "unit": "unité", "stock": 3.0, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p176", "name": "كوكاو", "unit": "unité", "stock": 3.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p177", "name": "خليط المكسرات", "unit": "unité", "stock": 3.0, "min": 2, "buy": 2200.0, "sell": 0}, {"id": "p178", "name": "جوز", "unit": "unité", "stock": 3.0, "min": 2, "buy": 1600.0, "sell": 0}, {"id": "p179", "name": "لوز مملح", "unit": "unité", "stock": 2.0, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p180", "name": "كاجو", "unit": "unité", "stock": 2.0, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p181", "name": "زريعة خضراء يقطين", "unit": "unité", "stock": 3.0, "min": 2, "buy": 1600.0, "sell": 0}, {"id": "p182", "name": "بذور الشيا", "unit": "unité", "stock": 0.35, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p183", "name": "الزقوقي", "unit": "unité", "stock": 0.3, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p184", "name": "لبان الذكر", "unit": "unité", "stock": 0.24, "min": 2, "buy": 7000.0, "sell": 0}, {"id": "p185", "name": "ماكا", "unit": "unité", "stock": 0.8, "min": 2, "buy": 5000.0, "sell": 0}, {"id": "p186", "name": "حسكة", "unit": "unité", "stock": 0.45, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p187", "name": "كركم", "unit": "unité", "stock": 0.25, "min": 2, "buy": 1500.0, "sell": 0}, {"id": "p188", "name": "أشوفقندا", "unit": "unité", "stock": 0.1, "min": 2, "buy": 5000.0, "sell": 0}, {"id": "p189", "name": "حب العزيز", "unit": "unité", "stock": 0.58, "min": 2, "buy": 600.0, "sell": 0}, {"id": "p190", "name": "الأملج", "unit": "unité", "stock": 0.3, "min": 2, "buy": 300.0, "sell": 0}, {"id": "p191", "name": "الصمغ العربي", "unit": "unité", "stock": 0.8, "min": 2, "buy": 4500.0, "sell": 0}, {"id": "p192", "name": "الجرف", "unit": "unité", "stock": 0.7, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p193", "name": "بذور الأكبي", "unit": "unité", "stock": 0.25, "min": 2, "buy": 3500.0, "sell": 0}, {"id": "p194", "name": "بذور المورينجا", "unit": "unité", "stock": 0.5, "min": 2, "buy": 2000.0, "sell": 0}, {"id": "p195", "name": "فول الصويا", "unit": "unité", "stock": 0.8, "min": 2, "buy": 2000.0, "sell": 0}, {"id": "p196", "name": "مورينجا عشبة", "unit": "unité", "stock": 0.13, "min": 2, "buy": 2000.0, "sell": 0}, {"id": "p197", "name": "قرفة سيلانية", "unit": "unité", "stock": 0.2, "min": 2, "buy": 9000.0, "sell": 0}, {"id": "p198", "name": "ليمون أسود", "unit": "unité", "stock": 0.3, "min": 2, "buy": 3000.0, "sell": 0}, {"id": "p199", "name": "عصا علي", "unit": "unité", "stock": 0.6, "min": 2, "buy": 18000.0, "sell": 0}, {"id": "p200", "name": "قاطونة", "unit": "unité", "stock": 0.9, "min": 2, "buy": 5000.0, "sell": 0}, {"id": "p201", "name": "جنسنغ", "unit": "unité", "stock": 0.2, "min": 2, "buy": 18000.0, "sell": 0}, {"id": "p202", "name": "بذور عباد الشمس", "unit": "unité", "stock": 0.7, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p203", "name": "قسط هندي", "unit": "unité", "stock": 0.5, "min": 2, "buy": 5000.0, "sell": 0}, {"id": "p204", "name": "نخالة القاطونة", "unit": "unité", "stock": 0.3, "min": 2, "buy": 5000.0, "sell": 0}, {"id": "p205", "name": "قرفة سيلانية", "unit": "unité", "stock": 1.0, "min": 2, "buy": 9000.0, "sell": 0}, {"id": "p206", "name": "الفطر الريشي", "unit": "unité", "stock": 0.3, "min": 2, "buy": 18000.0, "sell": 0}, {"id": "p207", "name": "عشبة ستيفيا", "unit": "unité", "stock": 0.5, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p208", "name": "كمون الصوفي", "unit": "unité", "stock": 0.5, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p209", "name": "كمون السوري", "unit": "unité", "stock": 1.0, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p210", "name": "السدر المطحون", "unit": "unité", "stock": 2.0, "min": 2, "buy": 500.0, "sell": 0}, {"id": "p211", "name": "تكروايت", "unit": "unité", "stock": 2.0, "min": 2, "buy": 1500.0, "sell": 0}, {"id": "p212", "name": "كركدية", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p213", "name": "سنا مكي", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p214", "name": "بابونج", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1000.0, "sell": 0}, {"id": "p215", "name": "BREAST TE", "unit": "unité", "stock": 1.0, "min": 2, "buy": 3500.0, "sell": 0}, {"id": "p216", "name": "تاستي كالم", "unit": "unité", "stock": 9.0, "min": 2, "buy": 900.0, "sell": 0}, {"id": "p217", "name": "تحاميل أكبي", "unit": "unité", "stock": 2.0, "min": 2, "buy": 2500.0, "sell": 0}, {"id": "p218", "name": "عسل ملكي بلارة", "unit": "kg", "stock": 9.0, "min": 10, "buy": 450.0, "sell": 0}, {"id": "p219", "name": "عسل مانوكا", "unit": "kg", "stock": 13.0, "min": 10, "buy": 200.0, "sell": 0}, {"id": "p220", "name": "علكة مقوية", "unit": "unité", "stock": 1.0, "min": 2, "buy": 200.0, "sell": 0}, {"id": "p221", "name": "عسل الملكي", "unit": "kg", "stock": 7.0, "min": 10, "buy": 250.0, "sell": 0}, {"id": "p222", "name": "هيلتي نساء", "unit": "unité", "stock": 9.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p223", "name": "تَمْرَة", "unit": "unité", "stock": 4.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p224", "name": "دارموفيت", "unit": "unité", "stock": 1.0, "min": 2, "buy": 900.0, "sell": 0}, {"id": "p225", "name": "سيبار أبيتي", "unit": "unité", "stock": 2.0, "min": 2, "buy": 250.0, "sell": 0}, {"id": "p226", "name": "عسل فيقار", "unit": "kg", "stock": 14.0, "min": 10, "buy": 250.0, "sell": 0}],
+    moves: []
+  };
+}
+
+let D;
+function load() {
+  try { const v = JSON.parse(localStorage.getItem(KEY)); if (v && Array.isArray(v.products)) { if (!v.receipts) v.receipts = []; if (!v.sales) v.sales = []; if (!v.customers) v.customers = []; if (!v.expenses) v.expenses = []; if (!v.cash) v.cash = { date: today(), balance: 0 }; return v; } } catch (e) {}
+  return seed();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(D)); } catch (e) {} markChanged(); }
+
+const prodById = id => D.products.find(p => p.id === id);
+const isLow = p => p.stock <= p.min;
+
+function renderDash() {
+  const cost = D.products.reduce((a, p) => a + p.stock * p.buy, 0);
+  const sale = D.products.reduce((a, p) => a + p.stock * p.sell, 0);
+  document.getElementById("kCost").textContent = fmt(cost);
+  document.getElementById("kSale").textContent = fmt(sale);
+  document.getElementById("kCount").textContent = D.products.length;
+  const low = D.products.filter(isLow);
+  document.getElementById("kAlerts").textContent = low.length;
+  document.getElementById("alerts").innerHTML = low.length
+    ? low.map(p => `<div class="item"><div><div class="name">${esc(p.name)}</div><div class="meta">Reste ${num(p.stock)} ${esc(p.unit)} (seuil ${num(p.min)})</div></div><span class="badge b-low">Stock bas</span></div>`).join("")
+    : `<div class="empty">Aucune alerte</div>`;
+  document.getElementById("dashList").innerHTML = D.products.map(p => `
+    <div class="item"><div><div class="name">${esc(p.name)}</div>
+    <div class="meta">Achat ${fmt(p.buy)} · Vente ${fmt(p.sell)}${p.sell && p.buy ? " · Marge " + fmt(p.sell - p.buy) : ""}</div></div>
+    <div class="qty">${num(p.stock)} ${esc(p.unit)}<br><span class="badge ${isLow(p) ? "b-low" : "b-ok"}">${isLow(p) ? "Bas" : "OK"}</span></div></div>`
+  ).join("") || `<div class="empty">Aucun produit</div>`;
+}
+
+function renderProducts() {
+  document.getElementById("prodList").innerHTML = D.products.map(p => `
+    <div class="item"><div><div class="name">${esc(p.name)}</div>
+    <div class="meta">Achat ${fmt(p.buy)} · Vente ${fmt(p.sell)} · Seuil ${num(p.min)} ${esc(p.unit)}</div><div class="meta ${sellStatus(p).cls}">${esc(sellStatus(p).txt)}</div></div>
+    <div style="text-align:right"><div class="qty">${num(p.stock)} ${esc(p.unit)}</div>
+    <div class="actions"><button class="small ghost" data-edit="${p.id}">Modifier</button><button class="small danger" data-del="${p.id}">×</button></div></div></div>`
+  ).join("") || `<div class="empty">Aucun produit</div>`;
+  const opts = D.products.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  document.getElementById("mProd").innerHTML = opts;
+  document.getElementById("bProd").innerHTML = opts;
+}
+
+function renderMoves() {
+  const list = [...D.moves].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 50);
+  document.getElementById("movList").innerHTML = list.map(m => {
+    const p = prodById(m.productId);
+    const sign = m.type === "in" ? "+" : "−";
+    return `<div class="item"><div><div class="name">${esc(p ? p.name : "(supprimé)")}</div>
+      <div class="meta">${esc(m.date)}${m.note ? " · " + esc(m.note) : ""}</div></div>
+      <div class="qty ${m.type === "in" ? "in" : "out"}">${sign}${num(m.qty)} ${esc(p ? p.unit : "")}</div></div>`;
+  }).join("") || `<div class="empty">Aucun mouvement</div>`;
+}
+
+function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); save(); }
+
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
+  t.classList.add("on");
+  ["dash", "prod", "mov", "buy", "sales", "cash", "cli", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
+}));
+
+function resetProdForm() {
+  document.getElementById("pTitle").textContent = "Ajouter un produit";
+  ["pId", "pName"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("pStock").value = 0;
+  document.getElementById("pMin").value = 5;
+  document.getElementById("pBuy").value = 0;
+  document.getElementById("pSell").value = 0;
+  document.getElementById("pUnit").value = "kg";
+}
+document.getElementById("pCancel").addEventListener("click", resetProdForm);
+document.getElementById("pSave").addEventListener("click", () => {
+  const name = document.getElementById("pName").value.trim();
+  if (!name) return alert("Mets le nom du produit.");
+  const data = {
+    name, unit: document.getElementById("pUnit").value,
+    stock: parseFloat(document.getElementById("pStock").value) || 0,
+    min: parseFloat(document.getElementById("pMin").value) || 0,
+    buy: parseFloat(document.getElementById("pBuy").value) || 0,
+    sell: parseFloat(document.getElementById("pSell").value) || 0
+  };
+  if (data.sell > 0 && data.buy > 0 && data.sell < floorPrice(data) - 0.005)
+    return alert("Prix de vente trop bas : minimum " + fmt(floorPrice(data)) + " pour respecter la marge garantie de " + margins().min + " %.");
+  const id = document.getElementById("pId").value;
+  if (id) { const p0 = prodById(id); Object.assign(p0, data); touch(p0); }
+  else D.products.push({ id: uid(), ...data });
+  resetProdForm(); renderAll();
+});
+document.getElementById("prodList").addEventListener("click", e => {
+  const t = e.target;
+  if (t.dataset.edit) {
+    const p = prodById(t.dataset.edit);
+    document.getElementById("pTitle").textContent = "Modifier le produit";
+    document.getElementById("pId").value = p.id;
+    document.getElementById("pName").value = p.name;
+    document.getElementById("pUnit").value = p.unit;
+    document.getElementById("pStock").value = p.stock;
+    document.getElementById("pMin").value = p.min;
+    document.getElementById("pBuy").value = p.buy;
+    document.getElementById("pSell").value = p.sell;
+    updateProdHint();
+    document.querySelector('.tab[data-tab="prod"]').click();
+    window.scrollTo(0, 0);
+  }
+  if (t.dataset.del) {
+    const p = prodById(t.dataset.del);
+    if (confirm("Supprimer " + p.name + " ?")) {
+      D.products = D.products.filter(x => x.id !== p.id);
+      renderAll();
+    }
+  }
+});
+
+document.getElementById("mDate").value = today();
+document.getElementById("mSave").addEventListener("click", () => {
+  const p = prodById(document.getElementById("mProd").value);
+  const qty = parseFloat(document.getElementById("mQty").value);
+  const type = document.getElementById("mType").value;
+  if (!p || !qty || qty <= 0) return alert("Choisis un produit et une quantité.");
+  if (type === "out" && qty > p.stock && !confirm("Le stock n'est pas suffisant. Continuer quand même ?")) return;
+  p.stock = type === "in" ? p.stock + qty : Math.max(0, p.stock - qty);
+  touch(p);
+  D.moves.push({ id: uid(), productId: p.id, type, qty, date: document.getElementById("mDate").value || today(), note: document.getElementById("mNote").value.trim() });
+  document.getElementById("mQty").value = "";
+  document.getElementById("mNote").value = "";
+  renderAll();
+});
+
+document.getElementById("exp").addEventListener("click", () => {
+  const txt = JSON.stringify(D);
+  document.getElementById("io").value = txt;
+  if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
+});
+document.getElementById("imp").addEventListener("click", () => {
+  try {
+    const v = JSON.parse(document.getElementById("io").value);
+    if (!v || !Array.isArray(v.products)) throw new Error();
+    D = v; renderAll(); alert("Restauré.");
+  } catch (e) { alert("Sauvegarde invalide."); }
+});
+document.getElementById("rst").addEventListener("click", () => {
+  if (confirm("Remettre les données de départ ? Tout ce qui a été ajouté sera perdu.")) { D = seed(); renderAll(); }
+});
+
+/* ===== Bons d'achat ===== */
+let bLines = [];
+let bPhotoData = "";
+const DEBT_KEY = "calorie-boost-dettes-v2";
+function debtList() { try { const v = JSON.parse(localStorage.getItem(DEBT_KEY)); if (Array.isArray(v)) return v; } catch (e) {} return []; }
+function supplierMatch(list, name) {
+  const t = name.trim().toLowerCase();
+  return list.find(x => { const n = String(x.name).toLowerCase(); return n.includes(t) || t.includes(n.replace(/\s*\(.*\)\s*/, "").trim()); });
+}
+function addDebtForReceipt(supplier, total, desc, date) {
+  const list = debtList();
+  let s = supplierMatch(list, supplier);
+  if (!s) { s = { id: "s" + uid(), name: supplier.trim(), note: "", dueDay: 10, terms: 30, freq: "monthly", debts: [], payments: [] }; list.push(s); }
+  s.debts.push({ id: "d" + uid(), date, amount: total, desc });
+  try { localStorage.setItem(DEBT_KEY, JSON.stringify(list)); } catch (e) {}
+}
+function renderBuyForm() {
+  document.getElementById("bLines").innerHTML = bLines.map((l, i) => `
+    <div class="item"><div><div class="name">${esc(l.name)}</div><div class="meta">${num(l.qty)} × ${fmt(l.price)}</div></div>
+    <div style="text-align:right"><div class="qty">${fmt(l.qty * l.price)}</div><button class="small danger" data-rm="${i}">×</button></div></div>`).join("")
+    || `<div class="empty">Aucune ligne</div>`;
+  const total = bLines.reduce((a, l) => a + l.qty * l.price, 0);
+  document.getElementById("bLines").insertAdjacentHTML("beforeend", bLines.length ? `<div class="item"><span class="name">Total</span><span class="qty">${fmt(total)}</span></div>` : "");
+  const datalist = document.getElementById("supNames");
+  datalist.innerHTML = debtList().map(s => `<option value="${esc(s.name)}">`).join("");
+}
+document.getElementById("bAdd").addEventListener("click", () => {
+  const p = prodById(document.getElementById("bProd").value);
+  const qty = parseFloat(document.getElementById("bQty").value);
+  const price = parseFloat(document.getElementById("bPrice").value) || 0;
+  if (!p || !qty || qty <= 0) return alert("Choisis un produit et une quantité.");
+  bLines.push({ productId: p.id, name: p.name, unit: p.unit, qty, price });
+  document.getElementById("bQty").value = "";
+  document.getElementById("bPrice").value = "";
+  renderBuyForm();
+});
+document.getElementById("bLines").addEventListener("click", e => {
+  const i = e.target.dataset.rm;
+  if (i !== undefined) { bLines.splice(parseInt(i, 10), 1); renderBuyForm(); }
+});
+document.getElementById("bPhoto").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const r = Math.min(1, 900 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    bPhotoData = c.toDataURL("image/jpeg", 0.7);
+    URL.revokeObjectURL(url);
+    document.getElementById("bPreview").innerHTML = `<img src="${bPhotoData}" style="max-width:100%;border-radius:8px;margin-top:8px">`;
+  };
+  img.src = url;
+});
+document.getElementById("bSave").addEventListener("click", () => {
+  const supplier = document.getElementById("bSup").value.trim();
+  const date = document.getElementById("bDate").value || today();
+  if (!supplier) return alert("Mets le nom du fournisseur.");
+  if (!bLines.length) return alert("Ajoute au moins une ligne.");
+  const total = bLines.reduce((a, l) => a + l.qty * l.price, 0);
+  const note = document.getElementById("bNote").value.trim();
+  bLines.forEach(l => {
+    const p = prodById(l.productId);
+    if (!p) return;
+    p.stock = p.stock + l.qty;
+    if (l.price > 0) p.buy = l.price;
+    touch(p);
+    D.moves.push({ id: uid(), productId: p.id, type: "in", qty: l.qty, date, note: "Bon : " + supplier + (note ? " · " + note : "") });
+  });
+  D.receipts.push({ id: uid(), date, supplier, note, total, photo: bPhotoData,
+    lines: bLines.map(l => ({ name: l.name, qty: l.qty, price: l.price })) });
+  addDebtForReceipt(supplier, total, "Bon d'achat " + date + (note ? " · " + note : ""), date);
+  bLines = []; bPhotoData = "";
+  document.getElementById("bSup").value = ""; document.getElementById("bNote").value = "";
+  document.getElementById("bPhoto").value = ""; document.getElementById("bPreview").innerHTML = "";
+  renderAll(); renderBuyForm();
+  const under = D.products.filter(p => p.sell > 0 && p.buy > 0 && p.sell < floorPrice(p) - 0.005);
+  alert("Bon enregistré : stock mis à jour et dette ajoutée à " + supplier + " (" + fmt(total) + ")." +
+    (under.length ? "\n\n⚠ Prix de vente sous le plancher garanti pour : " + under.slice(0, 8).map(p => p.name).join(", ") + (under.length > 8 ? "…" : "") + ". Mets à jour les prix de vente." : ""));
+});
+document.getElementById("bClear").addEventListener("click", () => {
+  bLines = []; bPhotoData = "";
+  document.getElementById("bPhoto").value = ""; document.getElementById("bPreview").innerHTML = "";
+  renderBuyForm();
+});
+function renderReceipts() {
+  const list = [...D.receipts].sort((a, b) => b.date.localeCompare(a.date));
+  document.getElementById("bList").innerHTML = list.map(r => `
+    <div class="item"><div style="flex:1"><div class="name">${esc(r.supplier)}</div>
+      <div class="meta">${esc(r.date)} · ${r.lines.length} produit(s)${r.note ? " · " + esc(r.note) : ""}</div>
+      ${r.photo ? `<img src="${r.photo}" style="max-width:100%;border-radius:8px;margin-top:6px">` : ""}</div>
+    <div class="qty">${fmt(r.total)}</div></div>`).join("") || `<div class="empty">Aucun bon</div>`;
+  document.getElementById("bDate").value = document.getElementById("bDate").value || today();
+}
+
+/* ===== Ventes, caisse et situation générale ===== */
+const r2 = n => Math.round(n * 100) / 100;
+function debtSuppliers() {
+  return debtList().map(s => {
+    const owed = s.debts.reduce((a, d) => a + d.amount, 0);
+    const paid = s.payments.reduce((a, p) => a + p.amount, 0);
+    return { name: s.name, rem: Math.max(0, owed - paid), payments: s.payments };
+  });
+}
+function cashBalance() {
+  const d0 = D.cash.date;
+  const since = (arr, f) => arr.filter(x => x.date >= d0).reduce((a, x) => a + f(x), 0);
+  const sales = since(D.sales.filter(x => !x.credit), x => x.amount);
+  const exp = since(D.expenses, x => x.amount);
+  const pays = debtSuppliers().reduce((a, s) => a + since(s.payments, p => p.amount), 0);
+  const custPay = (D.customers || []).reduce((a, c) => a + since(c.entries.filter(e => e.type === "payment"), e => e.amount), 0);
+  return { balance: D.cash.balance + sales - exp - pays + custPay, sales, exp, pays };
+}
+
+let sSel = null;
+const normTxt = s => String(s || "").toLowerCase().trim();
+function sMatches(q) {
+  q = normTxt(q);
+  if (!q) return [];
+  const starts = [], inside = [];
+  D.products.forEach(p => {
+    const n = normTxt(p.name);
+    if (n.startsWith(q) || n.split(/\s+/).some(w => w.startsWith(q))) starts.push(p);
+    else if (n.includes(q)) inside.push(p);
+  });
+  return starts.concat(inside).slice(0, 8);
+}
+function renderSug() {
+  const q = document.getElementById("sSearch").value;
+  const box = document.getElementById("sSug");
+  if (sSel && normTxt(sSel.name) === normTxt(q)) { box.innerHTML = ""; return; }
+  const m = sMatches(q);
+  box.innerHTML = m.map(p => `<div data-pick="${p.id}">${esc(p.name)} <span class="meta">· ${fmt(p.sell)} · stock ${num(p.stock)} ${esc(p.unit)}</span></div>`).join("")
+    || (q ? `<div class="meta">Aucun produit trouvé</div>` : "");
+}
+function pickProduct(id) {
+  sSel = prodById(id);
+  if (!sSel) return;
+  document.getElementById("sSearch").value = sSel.name;
+  document.getElementById("sSug").innerHTML = "";
+  document.getElementById("sUnitPrice").value = sSel.sell || "";
+  if (pendingSale) { applyPending(); return; }
+  document.getElementById("sValue").focus();
+  updatePreview();
+}
+function saleCalc() {
+  const p = sSel;
+  const v = parseFloat(document.getElementById("sValue").value);
+  const price = parseFloat(document.getElementById("sUnitPrice").value);
+  if (!p || !v || v <= 0 || !price || price <= 0) return null;
+  const byAmount = document.getElementById("sMode").value === "amount";
+  const qty = r2(byAmount ? v / price : v);
+  const amount = r2(byAmount ? v : v * price);
+  const discount = p.sell && price < p.sell ? r2((p.sell - price) * qty) : 0;
+  return { p, qty, amount, price, discount };
+}
+function updatePreview() {
+  const el = document.getElementById("sPreview");
+  const est = document.getElementById("sEst");
+  if (!sSel) { el.textContent = "Choisis un produit."; el.style.color = "var(--muted)"; est.textContent = ""; return; }
+  const c = saleCalc();
+  if (!c) { el.textContent = "Entre la valeur de la vente."; el.style.color = "var(--muted)"; est.textContent = ""; return; }
+  const after = Math.max(0, r2(c.p.stock - c.qty));
+  const floor = floorPrice(c.p);
+  const belowFloor = c.p.buy > 0 && c.price < floor - 0.005;
+  el.style.color = belowFloor || c.qty > c.p.stock ? "var(--danger)" : "var(--text)";
+  el.textContent = belowFloor
+    ? `✖ Refusé : prix inférieur au plancher garanti (${fmt(floor)} / ${c.p.unit})`
+    : `→ ${num(c.qty)} ${c.p.unit} · encaissé ${fmt(c.amount)}` + (c.discount ? ` · remise ${fmt(c.discount)}` : "") + ` · stock après : ${num(after)}`;
+  const full = c.p.sell * c.qty;
+  const plancher = floor * c.qty;
+  const desired = targetPrice(c.p) * c.qty;
+  const profit = c.amount - c.p.buy * c.qty;
+  const pct = c.p.buy * c.qty ? (profit / (c.p.buy * c.qty)) * 100 : 0;
+  est.innerHTML = `<div><strong>Estimation théorique (pas le bénéfice réel) :</strong></div>` +
+    `<div>Plein prix : ${fmt(full)} · Prix avec marge désirée : ${fmt(desired)} · Plancher garanti : ${fmt(plancher)}</div>` +
+    `<div>Bénéfice estimé sur cette vente : <span class="${profit >= 0 ? "in" : "out"}">${fmt(profit)}</span> (${num(pct)} %)</div>`;
+}
+function resetSale() {
+  sSel = null;
+  document.getElementById("sPay").value = "cash";
+  document.getElementById("sCust").value = "";
+  editingDate = null;
+  ["sSearch", "sUnitPrice", "sValue", "sNote", "sText"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("sSug").innerHTML = "";
+  updatePreview();
+  document.getElementById("sSearch").focus();
+}
+function renderChips() {
+  const amts = [500, 1000, 2000, 3000, 5000];
+  document.getElementById("sChips").innerHTML = amts.map(a => `<button data-amt="${a}">${a}</button>`).join("");
+}
+document.getElementById("sChips").addEventListener("click", e => {
+  const a = e.target.dataset.amt;
+  if (!a) return;
+  document.getElementById("sMode").value = "amount";
+  document.getElementById("sValue").value = a;
+  updatePreview();
+});
+document.getElementById("sSearch").addEventListener("input", () => {
+  if (sSel && normTxt(sSel.name) !== normTxt(document.getElementById("sSearch").value)) sSel = null;
+  renderSug(); updatePreview();
+});
+document.getElementById("sSearch").addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    const first = document.querySelector("#sSug [data-pick]");
+    if (first) pickProduct(first.dataset.pick);
+    e.preventDefault();
+  }
+});
+document.getElementById("sSug").addEventListener("click", e => {
+  const id = e.target.closest("[data-pick]")?.dataset.pick;
+  if (id) pickProduct(id);
+});
+["sUnitPrice", "sMode", "sValue"].forEach(id => document.getElementById(id).addEventListener("input", updatePreview));
+document.getElementById("sMode").addEventListener("change", updatePreview);
+document.getElementById("sCancel").addEventListener("click", resetSale);
+document.getElementById("sSave").addEventListener("click", () => {
+  const c = saleCalc();
+  if (!c) return alert("Choisis un produit, un prix et une valeur.");
+  if (document.getElementById("sPay").value === "credit" && !document.getElementById("sCust").value.trim())
+    return alert("Mets le nom du client pour une vente à crédit.");
+  if (c.p.buy > 0 && c.price < floorPrice(c.p) - 0.005)
+    return alert("Vente refusée : le prix unitaire (" + fmt(c.price) + ") est inférieur au plancher garanti (" + fmt(floorPrice(c.p)) + " / " + c.p.unit + ").");
+  const { p, qty, amount, price } = c;
+  if (qty > p.stock && !confirm("Le stock de " + p.name + " ne suffit pas. Continuer quand même ?")) return;
+  const date = editingDate || today();
+  editingDate = null;
+  const note = document.getElementById("sNote").value.trim();
+  p.stock = Math.max(0, r2(p.stock - qty));
+  touch(p);
+  const isCredit = document.getElementById("sPay").value === "credit";
+  const cust = isCredit ? findOrCreateCustomer(document.getElementById("sCust").value) : null;
+  const sale = { id: uid(), date, productId: p.id, name: p.name, qty, unit: p.unit, unitPrice: price, amount, note, credit: isCredit, customerId: cust ? cust.id : "" };
+  if (cust) cust.entries.push({ id: uid(), date, amount, type: "sale", saleId: sale.id, desc: "Vente : " + p.name + " (" + qty + " " + p.unit + ")" });
+  D.sales.push(sale);
+  D.moves.push({ id: uid(), productId: p.id, type: "out", qty, date, note: "Vente" + (note ? " · " + note : ""), saleId: sale.id });
+  resetSale();
+  renderAll();
+  const msg = document.getElementById("sPreview");
+  msg.style.color = "var(--accent)";
+  msg.textContent = "✔ Vente enregistrée : " + fmt(amount) + " (" + num(qty) + " " + p.unit + ")";
+});
+function undoSale(id) {
+  const s = D.sales.find(x => x.id === id);
+  if (!s) return;
+  const p = prodById(s.productId);
+  if (p) { p.stock = r2(p.stock + s.qty); }
+  D.sales = D.sales.filter(x => x.id !== id);
+  D.moves = D.moves.filter(m => m.saleId !== id);
+  (D.customers || []).forEach(c => { c.entries = c.entries.filter(e => e.saleId !== id); });
+  renderAll();
+}
+document.getElementById("sList").addEventListener("click", e => {
+  const t = e.target;
+  if (t.dataset.sdel && confirm("Supprimer cette vente ? Le stock sera remis.")) undoSale(t.dataset.sdel);
+  if (t.dataset.sedit) {
+    const s = D.sales.find(x => x.id === t.dataset.sedit);
+    if (!s) return;
+    editingDate = s.date;
+    undoSale(s.id);
+    pickProduct(s.productId);
+    document.getElementById("sUnitPrice").value = s.unitPrice || (s.amount / s.qty);
+    document.getElementById("sMode").value = "amount";
+    document.getElementById("sValue").value = s.amount;
+    document.getElementById("sNote").value = s.note || "";
+    updatePreview();
+    document.querySelector('.tab[data-tab="dash"]').click();
+    window.scrollTo(0, 0);
+  }
+});
+function saleDiscount(s) {
+  const p = prodById(s.productId);
+  return p ? Math.max(0, (p.sell || 0) * s.qty - s.amount) : 0;
+}
+function shiftDay(days) {
+  const d = new Date(viewDay + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  viewDay = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  renderSales();
+}
+function renderSales() {
+  const t = today();
+  const todaysAll = D.sales.filter(s => s.date === t);
+  const totToday = todaysAll.reduce((a, s) => a + s.amount, 0);
+  document.getElementById("sTodayBig").textContent = fmt(totToday) + " (" + todaysAll.length + " vente(s))";
+  document.getElementById("hDay").value = viewDay;
+  const day = viewDay;
+  const sales = D.sales.filter(s => s.date === day).reverse();
+  const tot = sales.reduce((a, s) => a + s.amount, 0);
+  const disc = sales.reduce((a, s) => a + saleDiscount(s), 0);
+  document.getElementById("hTotal").textContent = fmt(tot);
+  document.getElementById("hCount").textContent = sales.length;
+  document.getElementById("hSub").textContent = (day === t ? "Aujourd'hui" : day) +
+    (disc ? " · remises : " + fmt(disc) : "") + (sales.length ? " · moyenne : " + fmt(tot / sales.length) : "");
+  document.getElementById("sList").innerHTML = sales.map(s => `
+    <div class="item"><div style="flex:1"><div class="name">${esc(s.name)}</div>
+    <div class="meta">${num(s.qty)} ${esc(s.unit)}${s.unitPrice ? " · " + fmt(s.unitPrice) + "/" + esc(s.unit) : ""}${saleDiscount(s) ? " · remise " + fmt(saleDiscount(s)) : ""}${s.note ? " · " + esc(s.note) : ""}</div>
+    <div class="actions"><button class="small ghost" data-sedit="${s.id}">Modifier / remise</button><button class="small danger" data-sdel="${s.id}">Supprimer</button></div></div>
+    <div class="qty in">${fmt(s.amount)}</div></div>`).join("") || `<div class="empty">Aucune vente ce jour</div>`;
+  const groups = {};
+  D.sales.forEach(s => { if (!groups[s.date]) groups[s.date] = { n: 0, tot: 0 }; groups[s.date].n++; groups[s.date].tot += s.amount; });
+  const days = Object.keys(groups).sort().reverse().slice(0, 60);
+  document.getElementById("hDays").innerHTML = days.map(d => `
+    <div class="item" style="cursor:pointer" data-day="${d}"><div><div class="name">${d}${d === t ? " (aujourd'hui)" : ""}</div>
+    <div class="meta">${groups[d].n} vente(s)</div></div><div class="qty in">${fmt(groups[d].tot)}</div></div>`).join("")
+    || `<div class="empty">Aucun historique</div>`;
+}
+document.getElementById("hDay").addEventListener("change", e => { viewDay = e.target.value || today(); renderSales(); });
+document.getElementById("hPrev").addEventListener("click", () => shiftDay(-1));
+document.getElementById("hNext").addEventListener("click", () => shiftDay(1));
+document.getElementById("hDays").addEventListener("click", e => {
+  const d = e.target.closest("[data-day]")?.dataset.day;
+  if (d) { viewDay = d; renderSales(); window.scrollTo(0, 0); }
+});
+
+/* ===== Marges garanties ===== */
+function margins() {
+  try { const v = JSON.parse(localStorage.getItem("calorie-boost-margins")) || {}; return { min: Number(v.min ?? 25), target: Number(v.target ?? 40) }; }
+  catch (e) { return { min: 25, target: 40 }; }
+}
+function floorPrice(p) { return (p.buy || 0) * (1 + margins().min / 100); }
+function targetPrice(p) { return (p.buy || 0) * (1 + margins().target / 100); }
+document.getElementById("mMin").value = margins().min;
+document.getElementById("mTarget").value = margins().target;
+document.getElementById("mSaveCfg").addEventListener("click", () => {
+  const min = parseFloat(document.getElementById("mMin").value);
+  const target = parseFloat(document.getElementById("mTarget").value);
+  if (isNaN(min) || min < 0 || isNaN(target) || target < min) return alert("La marge désirée doit être au moins égale à la marge minimale.");
+  localStorage.setItem("calorie-boost-margins", JSON.stringify({ min, target }));
+  alert("Marges enregistrées : minimum " + min + " %, désirée " + target + " %.");
+  renderAll();
+});
+
+/* ===== Saisie en texte libre ===== */
+let pendingSale = null;
+let editingDate = null;
+let viewDay = today();
+const STOP = new Set(["بـ","ب","ثمن","سعر","بسعر","بثمن","و","لتر","ليتر","l","ل","كغ","كلغ","كيلو","kg","g","غ","غرام","جرام","قطعة","قطع","حبة","حبات","remise","remize","ريمز","ريميز","ريمزي","تخفيض","خصم","rem","de","a","à","dh","da","دج","دينار"]);
+const WEIGHT_G = new Set(["g","غ","غرام","جرام"]);
+function parseSale(raw) {
+  let t = String(raw || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[,،]/g, ".").toLowerCase();
+  let remise = 0;
+  const rm = t.match(/(remise|remize|ريمز|ريميز|ريمزي|تخفيض|خصم|rem)\s*(\d+(?:\.\d+)?)/);
+  if (rm) { remise = parseFloat(rm[2]); t = t.replace(rm[0], " "); }
+  const nums = [];
+  t = t.replace(/(\d+(?:\.\d+)?)\s*(كيلوغرام|كيلو|كلغ|كغ|kg|غرام|جرام|غ|g|قطعة|قطع|حبة|حبات)?/g, (m, v, u) => {
+    nums.push({ v: parseFloat(v), u: u || "" }); return " ";
+  });
+  const tokens = t.split(/[\s،,.;:()\-]+/).filter(w => w.length > 1 && !STOP.has(w));
+  return { remise, nums, tokens };
+}
+function applyPending() {
+  const pd = pendingSale;
+  pendingSale = null;
+  const p = sSel;
+  if (!p) return;
+  const remise = pd.remise || 0;
+  if (pd.qty) {
+    document.getElementById("sMode").value = "qty";
+    document.getElementById("sValue").value = r2(pd.qty);
+    const total = pd.price != null ? pd.price : p.sell * pd.qty;
+    document.getElementById("sUnitPrice").value = r2((total - remise) / pd.qty);
+  } else if (pd.price != null) {
+    document.getElementById("sMode").value = "amount";
+    document.getElementById("sValue").value = r2(pd.price - remise);
+    document.getElementById("sUnitPrice").value = p.sell || "";
+  }
+  document.getElementById("sSug").innerHTML = "";
+  updatePreview();
+}
+function fillFromText() {
+  const raw = document.getElementById("sText").value;
+  if (!raw.trim()) return;
+  const pr = parseSale(raw);
+  let qtyN = null, priceN = null;
+  if (pr.nums.length >= 2) { qtyN = pr.nums[0]; priceN = pr.nums[pr.nums.length - 1]; }
+  else if (pr.nums.length === 1) { if (pr.nums[0].u) qtyN = pr.nums[0]; else priceN = pr.nums[0]; }
+  let qty = null;
+  if (qtyN) qty = WEIGHT_G.has(qtyN.u) ? qtyN.v / 1000 : qtyN.v;
+  const price = priceN ? priceN.v : null;
+  pendingSale = { qty, price, remise: pr.remise };
+  const q = pr.tokens;
+  let matches = q.length ? D.products.filter(p => q.every(tk => normTxt(p.name).includes(tk))) : [];
+  if (!matches.length && q.length) {
+    matches = D.products
+      .map(p => ({ p, c: q.filter(tk => normTxt(p.name).includes(tk)).length }))
+      .filter(x => x.c > 0).sort((a, b) => b.c - a.c).slice(0, 8).map(x => x.p);
+  }
+  if (matches.length === 1) { pickProduct(matches[0].id); return; }
+  sSel = null;
+  document.getElementById("sSearch").value = q.join(" ");
+  document.getElementById("sSug").innerHTML = matches.map(p => `<div data-pick="${p.id}">${esc(p.name)} <span class="meta">· ${fmt(p.sell)} · stock ${num(p.stock)} ${esc(p.unit)}</span></div>`).join("")
+    || `<div class="meta">Aucun produit trouvé, écris le nom autrement.</div>`;
+  const el = document.getElementById("sPreview");
+  el.style.color = "var(--muted)";
+  el.textContent = matches.length ? "Choisis le produit dans la liste, les autres valeurs sont déjà remplies." : "";
+}
+document.getElementById("sParse").addEventListener("click", fillFromText);
+document.getElementById("sText").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); fillFromText(); } });
+
+renderChips();
+function renderCash() {
+  const c = cashBalance();
+  document.getElementById("cBal").textContent = fmt(c.balance);
+  document.getElementById("cDetail").textContent =
+    "Depuis le " + D.cash.date + " · départ " + fmt(D.cash.balance) + " + ventes " + fmt(c.sales) +
+    " − dépenses " + fmt(c.exp) + " − paiements fournisseurs " + fmt(c.pays);
+  document.getElementById("cDate2").value = D.cash.date;
+  document.getElementById("cBal2").value = D.cash.balance;
+  document.getElementById("eDate").value = document.getElementById("eDate").value || today();
+  document.getElementById("eList").innerHTML = [...D.expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30).map(e => `
+    <div class="item"><div><div class="name">${esc(e.label)}</div><div class="meta">${esc(e.date)}</div></div>
+    <div style="text-align:right"><div class="qty out">−${fmt(e.amount)}</div><button class="small danger" data-erm="${e.id}">×</button></div></div>`).join("");
+}
+document.getElementById("cSet").addEventListener("click", () => {
+  const date = document.getElementById("cDate2").value || today();
+  const bal = parseFloat(document.getElementById("cBal2").value) || 0;
+  D.cash = { date, balance: bal };
+  renderAll();
+  alert("Solde enregistré.");
+});
+document.getElementById("eSave").addEventListener("click", () => {
+  const label = document.getElementById("eLabel").value.trim();
+  const amount = parseFloat(document.getElementById("eAmt").value);
+  if (!label || !amount || amount <= 0) return alert("Mets le motif et le montant.");
+  D.expenses.push({ id: uid(), label, amount, date: document.getElementById("eDate").value || today() });
+  document.getElementById("eLabel").value = ""; document.getElementById("eAmt").value = "";
+  renderAll();
+});
+document.getElementById("eList").addEventListener("click", e => {
+  const id = e.target.dataset.erm;
+  if (id && confirm("Supprimer cette dépense ?")) { D.expenses = D.expenses.filter(x => x.id !== id); renderAll(); }
+});
+function renderControl() {
+  const t = today(), m = t.slice(0, 7);
+  const c = cashBalance();
+  const salesToday = D.sales.filter(s => s.date === t).reduce((a, s) => a + s.amount, 0);
+  const salesMonth = D.sales.filter(s => s.date.slice(0, 7) === m).reduce((a, s) => a + s.amount, 0);
+  const debts = debtSuppliers();
+  const debtTotal = debts.reduce((a, s) => a + s.rem, 0);
+  const cost = D.products.reduce((a, p) => a + p.stock * p.buy, 0);
+  const low = D.products.filter(isLow).length;
+  const owing = debts.filter(s => s.rem > 0).sort((a, b) => b.rem - a.rem);
+  document.getElementById("ctrl").innerHTML = `
+    <h2>Situation générale</h2>
+    <div class="stats" style="margin-top:6px">
+      <div><div class="label">Caisse</div><div class="big">${fmt(c.balance)}</div></div>
+      <div><div class="label">Dettes fournisseurs</div><div class="big out">${fmt(debtTotal)}</div></div>
+      <div><div class="label">Valeur du stock (achat)</div><div class="big">${fmt(cost)}</div></div>
+      <div><div class="label">Stock bas</div><div class="big">${low}</div></div>
+      <div><div class="label">Ventes du jour</div><div class="big in">${fmt(salesToday)}</div></div>
+      <div><div class="label">Ventes du mois</div><div class="big in">${fmt(salesMonth)}</div></div>
+    </div>
+    <div class="card" style="margin-top:10px;padding:12px">
+      <div class="label" style="margin-bottom:6px">Bilan global (situation financière)</div>
+      <table style="width:100%;font-size:15px;border-collapse:collapse">
+        <tr><td style="padding:4px 0">Stock (prix d'achat)</td><td style="text-align:right">${fmt(cost)}</td></tr>
+        <tr><td style="padding:4px 0">Caisse</td><td style="text-align:right">${fmt(c.balance)}</td></tr>
+        <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">Total actif</td><td style="text-align:right">${fmt(cost + c.balance)}</td></tr>
+        <tr><td style="padding:4px 0">Dettes fournisseurs (restant)</td><td style="text-align:right" class="out">−${fmt(debtTotal)}</td></tr>
+        <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">Situation nette</td><td style="text-align:right" class="${cost + c.balance - debtTotal >= 0 ? "in" : "out"}">${fmt(cost + c.balance - debtTotal)}</td></tr>
+      </table>
+      <div class="label" style="margin-top:8px">Stock couvre ${debtTotal ? Math.round(cost / debtTotal * 100) : 0}% des dettes · minimum à payer ce mois : ${window.__debtMinTotal ? fmt(window.__debtMinTotal()) : "—"}</div>
+      <div class="label" style="margin-top:4px">${cost + c.balance >= debtTotal ? "✔ L'actif couvre les dettes." : "⚠ Les dettes dépassent l'actif : il faut encaisser ou vendre pour couvrir."}</div>
+    </div>
+    <div class="label" style="margin-top:12px">Dettes par fournisseur</div>
+    ${owing.map(s => `<div class="item" style="padding:6px 0"><span>${esc(s.name)}</span><span class="out">${fmt(s.rem)}</span></div>`).join("") || `<div class="empty">Aucune dette</div>`}
+  `;
+}
+
+/* Un produit modifié passe en bas de la liste, pour faire le tour sans repasser deux fois */
+function touch(p) {
+  D.products = D.products.filter(x => x.id !== p.id);
+  D.products.push(p);
+}
+/* ===== Synchronisation Google Sheets ===== */
+const SYNC_KEY = "calorie-boost-sync";
+function markChanged() {}
+window.markChanged = markChanged;
+function syncCfg() { try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch (e) { return {}; } }
+function syncSaveCfg(c) { localStorage.setItem(SYNC_KEY, JSON.stringify(c)); }
+function localRaw() { return (localStorage.getItem(KEY) || "") + "\u0001" + (localStorage.getItem(DEBT_KEY) || ""); }
+function hashOf(s) { let x = 0; for (let k = 0; k < s.length; k++) { x = (x * 31 + s.charCodeAt(k)) | 0; } return String(x) + ":" + s.length; }
+function cloudStock() {
+  const s = JSON.parse(localStorage.getItem(KEY) || "null");
+  if (s && s.receipts) s.receipts.forEach(r => { delete r.photo; });
+  return JSON.stringify(s);
+}
+async function cloudGet(url) {
+  const r = await fetch(url + "?action=get", { cache: "no-store" });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+async function cloudPut(url, payload) {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json().catch(() => ({}));
+}
+function setSyncStatus(txt, ok) {
+  const el = document.getElementById("syncStatus");
+  el.textContent = txt;
+  el.style.color = ok === false ? "var(--danger)" : ok ? "var(--accent)" : "var(--muted)";
+}
+let syncBusy = false;
+async function syncNow() {
+  const cfg = syncCfg();
+  if (!cfg.url || syncBusy) return;
+  syncBusy = true;
+  try {
+    const remote = await cloudGet(cfg.url);
+    const rAt = Number(remote.at || 0);
+    const ls = Number(cfg.last || 0);
+    const changed = hashOf(localRaw()) !== cfg.hash;
+    if (rAt > ls) {
+      if (ls > 0 && changed) { setSyncStatus("⚠ Conflit : des données ont changé sur deux appareils. Fais une sauvegarde (Exporter) avant de continuer.", false); return; }
+      if (remote.stock) localStorage.setItem(KEY, remote.stock);
+      if (remote.debts) localStorage.setItem(DEBT_KEY, remote.debts);
+      cfg.last = rAt; cfg.hash = hashOf(localRaw()); syncSaveCfg(cfg);
+      window.__skipUnload = true; location.reload();
+      return;
+    }
+    if (changed) {
+      const at = Date.now();
+      await cloudPut(cfg.url, { at, stock: cloudStock(), debts: localStorage.getItem(DEBT_KEY) || "" });
+      cfg.last = at; cfg.hash = hashOf(localRaw()); syncSaveCfg(cfg);
+    }
+    setSyncStatus("✔ Synchronisé à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), true);
+  } catch (e) {
+    setSyncStatus("Erreur de synchronisation : " + e.message + ". Vérifie l'adresse et que le script est déployé pour « Tout le monde ».", false);
+  } finally { syncBusy = false; }
+}
+document.getElementById("syncSave").addEventListener("click", () => {
+  const url = document.getElementById("syncUrl").value.trim();
+  if (!url.startsWith("https://script.google.com/")) return alert("L'adresse doit commencer par https://script.google.com/");
+  const cfg = syncCfg(); cfg.url = url; cfg.last = 0; cfg.hash = ""; syncSaveCfg(cfg);
+  syncNow();
+});
+document.getElementById("syncNow").addEventListener("click", syncNow);
+document.getElementById("syncOff").addEventListener("click", () => {
+  if (confirm("Désactiver la synchronisation sur cet appareil ? Les données locales restent.")) {
+    localStorage.removeItem(SYNC_KEY); document.getElementById("syncUrl").value = "";
+    setSyncStatus("Non configuré.");
+  }
+});
+document.getElementById("syncUrl").value = syncCfg().url || "";
+if (syncCfg().url) { setSyncStatus("Synchronisation activée…"); setTimeout(syncNow, 800); setInterval(syncNow, 15000); }
+document.addEventListener("visibilitychange", () => { if (!document.hidden) syncNow(); });
+
+/* ===== Export Excel (CSV) ===== */
+const csvCell = v => { const s = String(v ?? ""); return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const csvNum = n => String(Math.round((Number(n) || 0) * 100) / 100).replace(".", ",");
+const toCSV = rows => "\uFEFF" + rows.map(r => r.map(csvCell).join(";")).join("\r\n");
+function downloadFile(name, rows) {
+  const blob = new Blob([toCSV(rows)], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+function exportExcel() {
+  const d = today();
+  const stamp = d;
+  // 1. Stock
+  const stock = [["Produit", "Unité", "Stock", "Prix achat", "Prix vente", "Valeur achat", "Valeur vente", "Seuil", "Alerte"]];
+  D.products.forEach(p => stock.push([p.name, p.unit, csvNum(p.stock), csvNum(p.buy), csvNum(p.sell),
+    csvNum(p.stock * p.buy), csvNum(p.stock * p.sell), csvNum(p.min), isLow(p) ? "OUI" : ""]));
+  // 2. Ventes
+  const sales = [["Date", "Produit", "Quantité", "Unité", "Prix unitaire", "Montant", "Remise", "Note"]];
+  [...D.sales].sort((a, b) => a.date.localeCompare(b.date)).forEach(s => sales.push([s.date, s.name, csvNum(s.qty), s.unit,
+    csvNum(s.unitPrice || 0), csvNum(s.amount), csvNum(saleDiscount(s)), s.note || ""]));
+  // 3. Dettes
+  const debts = [["Fournisseur", "Total dû", "Total payé", "Restant", "Dernier paiement"]];
+  let totDue = 0, totPaid = 0, totRem = 0;
+  debtList().forEach(s => {
+    const due = s.debts.reduce((a, x) => a + x.amount, 0);
+    const paid = s.payments.reduce((a, x) => a + x.amount, 0);
+    const last = s.payments.map(x => x.date).sort().pop() || "aucun";
+    totDue += due; totPaid += paid; totRem += Math.max(0, due - paid);
+    debts.push([s.name, csvNum(due), csvNum(paid), csvNum(Math.max(0, due - paid)), last]);
+  });
+  debts.push(["TOTAL", csvNum(totDue), csvNum(totPaid), csvNum(totRem), ""]);
+  debts.push([]);
+  debts.push(["Paiements", "Date", "Montant", "Note"]);
+  debtList().forEach(s => s.payments.forEach(p => debts.push([s.name, p.date, csvNum(p.amount), p.note || ""])));
+  // 4. Situation financière
+  const cost = D.products.reduce((a, p) => a + p.stock * p.buy, 0);
+  const saleVal = D.products.reduce((a, p) => a + p.stock * p.sell, 0);
+  const cash = cashBalance();
+  const m = d.slice(0, 7);
+  const salesToday = D.sales.filter(s => s.date === d).reduce((a, s) => a + s.amount, 0);
+  const salesMonth = D.sales.filter(s => s.date.slice(0, 7) === m).reduce((a, s) => a + s.amount, 0);
+  const expMonth = D.expenses.filter(e => e.date.slice(0, 7) === m).reduce((a, e) => a + e.amount, 0);
+  const net = cost + cash.balance - totRem;
+  const situation = [["Indicateur", "Valeur (DA)"],
+    ["Date du rapport", d],
+    ["Valeur du stock (prix d'achat)", csvNum(cost)],
+    ["Valeur du stock (prix de vente)", csvNum(saleVal)],
+    ["Marge potentielle sur le stock", csvNum(saleVal - cost)],
+    ["Caisse (liquidité)", csvNum(cash.balance)],
+    ["Dettes fournisseurs (restant)", csvNum(totRem)],
+    ["Position nette (stock + caisse - dettes)", csvNum(net)],
+    ["Ventes du jour", csvNum(salesToday)],
+    ["Ventes du mois", csvNum(salesMonth)],
+    ["Dépenses du mois", csvNum(expMonth)],
+    ["Nombre de produits", D.products.length],
+    ["Produits en stock bas", D.products.filter(isLow).length]];
+  downloadFile("1-Stock-" + stamp + ".csv", stock);
+  setTimeout(() => downloadFile("2-Ventes-" + stamp + ".csv", sales), 400);
+  setTimeout(() => downloadFile("3-Dettes-" + stamp + ".csv", debts), 800);
+  setTimeout(() => downloadFile("4-Situation-" + stamp + ".csv", situation), 1200);
+  try { localStorage.setItem("calorie-boost-exported", d); } catch (e) {}
+}
+document.getElementById("xlsBtn").addEventListener("click", exportExcel);
+/* Rappel dans l'application : à partir de 20h, si le rapport du jour n'est pas exporté */
+let remindSnoozed = false;
+function checkReminder() {
+  const done = localStorage.getItem("calorie-boost-exported") === today();
+  const show = new Date().getHours() >= 20 && !done && !remindSnoozed;
+  document.getElementById("remind").style.display = show ? "block" : "none";
+}
+document.getElementById("remindGo").addEventListener("click", () => { exportExcel(); setTimeout(checkReminder, 1500); });
+document.getElementById("remindLater").addEventListener("click", () => { remindSnoozed = true; checkReminder(); });
+setInterval(checkReminder, 60000);
+checkReminder();
+
+/* ===== Excel (.xlsx) hors ligne : export et import ===== */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(bytes) { let c = 0xFFFFFFFF; for (let i = 0; i < bytes.length; i++) c = CRC_T[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+const xenc = new TextEncoder();
+function colName(i) { let s = ""; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function colIndex(letters) { let n = 0; for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; }
+const xmlEsc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function xlHash(pw) {
+  let p = 0, idx = 1;
+  for (const ch of pw) { let v = ch.charCodeAt(0) << idx; const rot = v >> 15; v &= 0x7fff; p ^= (v | rot); idx++; }
+  p ^= pw.length; p ^= 0xCE4B;
+  return (p & 0xFFFF).toString(16).toUpperCase().padStart(4, "0");
+}
+function sheetXml(rows, spec) {
+  spec = spec || {};
+  const u = spec.unlock;
+  const isUnl = (r, c) => spec.unlockFn ? !!spec.unlockFn(r, c) : (!!u && r >= u.r1 && r <= u.r2 && c >= u.c1 && c <= u.c2);
+  const maxR = Math.max(rows.length, spec.minRows || 0);
+  let maxC = spec.minCols || 0;
+  rows.forEach(r => { if (r) maxC = Math.max(maxC, r.length); });
+  let x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  for (let r = 0; r < maxR; r++) {
+    const row = rows[r] || [];
+    let cells = "";
+    for (let c = 0; c < maxC; c++) {
+      const v = row[c];
+      const empty = v === null || v === undefined || v === "";
+      const unl = isUnl(r, c);
+      const style = r === 0 ? 2 : (unl ? 1 : 0);
+      if (empty && style === 0) continue;
+      const ref = colName(c) + (r + 1);
+      const sAttr = style ? ` s="${style}"` : "";
+      if (empty) cells += `<c r="${ref}"${sAttr}/>`;
+      else if (typeof v === "number" && isFinite(v)) cells += `<c r="${ref}"${sAttr}><v>${v}</v></c>`;
+      else cells += `<c r="${ref}"${sAttr} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+    }
+    if (cells) x += `<row r="${r + 1}">${cells}</row>`;
+  }
+  x += "</sheetData>";
+  x += `<sheetProtection sheet="1" objects="1" scenarios="1" formatCells="1" formatColumns="1" formatRows="1" deleteRows="1"${spec.password ? ` password="${spec.password}"` : ""}/>`;
+  return x + "</worksheet>";
+}
+function buildZip(files) {
+  const parts = [], central = []; let offset = 0;
+  files.forEach(f => {
+    const name = xenc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, 0, true); lh.setUint16(12, 0x21, true); lh.setUint32(14, crc, true); lh.setUint32(18, size, true);
+    lh.setUint32(22, size, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, f.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0, true);
+    ch.setUint16(10, 0, true); ch.setUint16(12, 0, true); ch.setUint16(14, 0x21, true); ch.setUint32(16, crc, true);
+    ch.setUint32(20, size, true); ch.setUint32(24, size, true); ch.setUint16(28, name.length, true);
+    ch.setUint16(30, 0, true); ch.setUint16(32, 0, true); ch.setUint16(34, 0, true); ch.setUint16(36, 0, true);
+    ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    offset += 30 + name.length + size;
+  });
+  const cdSize = central.reduce((a, c) => a + c.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(4, 0, true); end.setUint16(6, 0, true);
+  end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true); end.setUint16(20, 0, true);
+  const all = [...parts, ...central, new Uint8Array(end.buffer)];
+  const out = new Uint8Array(all.reduce((a, c) => a + c.length, 0));
+  let p = 0; all.forEach(c => { out.set(c, p); p += c.length; });
+  return out;
+}
+function buildXlsx(sheets, pwHash) {
+  const H = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const ct = H + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+    sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("") + "</Types>";
+  const rels = H + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const wb = H + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
+    sheets.map((s, i) => `<sheet name="${xmlEsc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("") + "</sheets></workbook>";
+  const wbRels = H + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("") +
+    `<Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  const styles = H + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><name val="Arial"/></font></fonts>' +
+    '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="3">' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyProtection="1"><protection locked="0"/></xf>' +
+    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+    '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  const files = [
+    { name: "[Content_Types].xml", data: xenc.encode(ct) },
+    { name: "_rels/.rels", data: xenc.encode(rels) },
+    { name: "xl/workbook.xml", data: xenc.encode(wb) },
+    { name: "xl/_rels/workbook.xml.rels", data: xenc.encode(wbRels) },
+    { name: "xl/styles.xml", data: xenc.encode(styles) }
+  ];
+  sheets.forEach((s, i) => files.push({ name: `xl/worksheets/sheet${i + 1}.xml`, data: xenc.encode(sheetXml(s.rows, Object.assign({}, s, { password: pwHash || "" }))) }));
+  return buildZip(files);
+}
+async function unzipAll(buf) {
+  const dv = new DataView(buf), bytes = new Uint8Array(buf), dec = new TextDecoder();
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= 0; i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error("fichier Excel invalide");
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const out = {};
+  for (let k = 0; k < count; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const loff = dv.getUint32(p + 42, true);
+    const name = dec.decode(bytes.subarray(p + 46, p + 46 + nlen));
+    const start = loff + 30 + dv.getUint16(loff + 26, true) + dv.getUint16(loff + 28, true);
+    const raw = bytes.subarray(start, start + csize);
+    let data = raw;
+    if (method === 8) {
+      const stream = new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      data = new Uint8Array(await new Response(stream).arrayBuffer());
+    } else if (method !== 0) throw new Error("compression non supportée");
+    out[name] = dec.decode(data);
+    p += 46 + nlen + xlen + clen;
+  }
+  return out;
+}
+function parseXlsx(files) {
+  const P = new DOMParser(), xml = s => P.parseFromString(s, "application/xml");
+  const shared = [];
+  if (files["xl/sharedStrings.xml"]) xml(files["xl/sharedStrings.xml"]).querySelectorAll("si").forEach(si => shared.push([...si.querySelectorAll("t")].map(t => t.textContent).join("")));
+  const wbDoc = xml(files["xl/workbook.xml"]);
+  const relMap = {};
+  xml(files["xl/_rels/workbook.xml.rels"]).querySelectorAll("Relationship").forEach(r => relMap[r.getAttribute("Id")] = r.getAttribute("Target"));
+  const result = {};
+  wbDoc.querySelectorAll("sheet").forEach(sh => {
+    let target = relMap[sh.getAttribute("r:id")];
+    target = target.startsWith("/") ? target.slice(1) : "xl/" + target;
+    const rows = [];
+    xml(files[target]).querySelectorAll("row").forEach(rowEl => {
+      const r = parseInt(rowEl.getAttribute("r"), 10) - 1;
+      rows[r] = rows[r] || [];
+      rowEl.querySelectorAll("c").forEach(c => {
+        const col = colIndex(c.getAttribute("r").replace(/\d+/g, ""));
+        const t = c.getAttribute("t"), v = c.querySelector("v");
+        let val = "";
+        if (t === "s") val = shared[parseInt(v.textContent, 10)] ?? "";
+        else if (t === "inlineStr") val = [...c.querySelectorAll("t")].map(x => x.textContent).join("");
+        else if (v) { const n = Number(v.textContent); val = (t === "str" || t === "b" || isNaN(n)) ? v.textContent : n; }
+        rows[r][col] = val;
+      });
+    });
+    result[sh.getAttribute("name")] = rows.map(r => r ? Array.from(r, v => v === undefined ? "" : v) : []);
+  });
+  return result;
+}
+
+
+function xlsxIsoDate(v) {
+  if (typeof v === "number") { const d = new Date(Math.round((v - 25569) * 86400000)); return d.toISOString().slice(0, 10); }
+  const s = String(v || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
+  return today();
+}
+function exportXlsx() {
+  const prod = [["id", "Nom", "Unité", "Stock", "Prix achat", "Prix vente", "Seuil", "Supprimer (1)"]];
+  D.products.forEach(p => prod.push([p.id, p.name, p.unit, p.stock, p.buy, p.sell, p.min]));
+  const sales = [["id", "Date", "productId", "Produit", "Quantité", "Unité", "Prix unitaire", "Montant", "Note"]];
+  D.sales.forEach(s => sales.push([s.id, s.date, s.productId, s.name, s.qty, s.unit, s.unitPrice || 0, s.amount, s.note || ""]));
+  const sup = [["id", "Nom", "Note", "Jour échéance", "Délai", "Fréquence", "Taux spécial (%)", "Montant fixe", "Plafond"]];
+  const lines = [["Type", "supplierId", "Date", "Montant", "Note", "id", "Supprimer (1)"]];
+  debtList().forEach(s => {
+    sup.push([s.id, s.name, s.note || "", s.dueDay || 10, s.terms || 30, s.freq || "monthly", s.pct || "", s.fixed || "", s.cap || ""]);
+    s.debts.forEach(d => lines.push(["Dette", s.id, d.date, d.amount, d.desc || "", d.id]));
+    s.payments.forEach(p => lines.push(["Paiement", s.id, p.date, p.amount, p.note || "", p.id]));
+  });
+  const exp = [["id", "Date", "Motif", "Montant"]];
+  D.expenses.forEach(e => exp.push([e.id, e.date, e.label, e.amount]));
+  const cli = [["clientId", "Nom", "Date", "Type", "Montant", "Description", "id", "saleId"]];
+  const typeLabel = { debt: "Dette", payment: "Paiement", sale: "Vente" };
+  (D.customers || []).forEach(c => c.entries.forEach(e => cli.push([c.id, c.name, e.date, typeLabel[e.type] || "Dette", e.amount, e.desc || "", e.id, e.saleId || ""])));
+  const cash = [["Date du solde", "Solde"], [D.cash.date, D.cash.balance]];
+  const nProd = prod.length, nLines = lines.length;
+  const prodUnlock = (r, c) => {
+    if (r < 1 || r > 299) return false;
+    const isNew = r >= nProd;
+    if (c === 7) return !isNew;
+    if (c >= 3 && c <= 6) return true;
+    return isNew && (c === 1 || c === 2);
+  };
+  const lineUnlock = (r, c) => {
+    if (r < 1 || r > 499) return false;
+    const isNew = r >= nLines;
+    if (c === 6) return !isNew;
+    if (c === 3) return true;
+    return isNew && c <= 4;
+  };
+  const pwHash = (localStorage.getItem("calorie-boost-xlpw") || "") ? xlHash(localStorage.getItem("calorie-boost-xlpw")) : "";
+  const bytes = buildXlsx([
+    { name: "Produits", rows: prod, unlockFn: prodUnlock, minRows: 300, minCols: 8 },
+    { name: "Ventes", rows: sales },
+    { name: "Fournisseurs", rows: sup },
+    { name: "Lignes dettes", rows: lines, unlockFn: lineUnlock, minRows: 500, minCols: 7 },
+    { name: "Depenses", rows: exp },
+    { name: "Clients", rows: cli },
+    { name: "Caisse", rows: cash }
+  ], pwHash);
+  const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "calorie-boost-" + today() + ".xlsx";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+async function importXlsx(e) {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  const mode = document.getElementById("xlMode").value;
+  if (mode === "replace" && !confirm("Remplacer toutes les données de l'application par le contenu de ce fichier Excel ?\n\nConseil : fais d'abord une sauvegarde (Exporter).")) return;
+  try {
+    const files = await unzipAll(await file.arrayBuffer());
+    const S2 = parseXlsx(files);
+    const firstSheet = Object.keys(S2)[0];
+    if (!S2["Lignes dettes"] && firstSheet && S2[firstSheet][0] && String(S2[firstSheet][0][0]).trim() === "Nom") {
+      const hdr = S2[firstSheet][0];
+      if (String(hdr[1] || "").toLowerCase().includes("quant")) await importInventory(S2[firstSheet]);
+      else await importCatalog(S2[firstSheet]);
+      return;
+    }
+    const need = ["Produits", "Ventes", "Fournisseurs", "Lignes dettes", "Depenses", "Caisse"];
+    const missing = need.filter(n => !S2[n]);
+    if (missing.length) throw new Error("feuilles manquantes : " + missing.join(", "));
+    const body = name => S2[name].slice(1).filter(r => r && r.some(c => c !== ""));
+    const products = body("Produits").filter(r => String(r[7]) !== "1").map(r => ({
+      id: String(r[0] || uid()), name: String(r[1]), unit: String(r[2] || "unité"),
+      stock: Number(r[3]) || 0, buy: Number(r[4]) || 0, sell: Number(r[5]) || 0, min: Number(r[6]) || 0
+    })).filter(p => p.name);
+    const sales = body("Ventes").map(r => ({
+      id: String(r[0] || uid()), date: xlsxIsoDate(r[1]), productId: String(r[2] || ""), name: String(r[3] || ""),
+      qty: Number(r[4]) || 0, unit: String(r[5] || ""), unitPrice: Number(r[6]) || 0, amount: Number(r[7]) || 0, note: String(r[8] || "")
+    })).filter(s => s.name);
+    const expenses = body("Depenses").map(r => ({ id: String(r[0] || uid()), date: xlsxIsoDate(r[1]), label: String(r[2] || ""), amount: Number(r[3]) || 0 })).filter(x => x.label);
+    const cliRows = S2["Clients"] ? S2["Clients"].slice(1).filter(r => r && r.some(c => c !== "")) : null;
+    const customers = cliRows ? (() => {
+      const map = {};
+      const typeKey = { dette: "debt", paiement: "payment", vente: "sale" };
+      cliRows.forEach(r => {
+        const cid = String(r[0] || uid());
+        if (!map[cid]) map[cid] = { id: cid, name: String(r[1] || "Client"), entries: [] };
+        const e = { id: String(r[6] || uid()), date: xlsxIsoDate(r[2]), type: typeKey[String(r[3]).trim().toLowerCase()] || "debt",
+          amount: Number(r[4]) || 0, desc: String(r[5] || "") };
+        if (r[7]) e.saleId = String(r[7]);
+        map[cid].entries.push(e);
+      });
+      return Object.values(map);
+    })() : null;
+    const cashRow = S2["Caisse"][1] || [];
+    const cash = { date: xlsxIsoDate(cashRow[0]), balance: Number(cashRow[1]) || 0 };
+    const suppliers = body("Fournisseurs").map(r => {
+      const s = { id: String(r[0] || uid()), name: String(r[1]), note: String(r[2] || ""), dueDay: Number(r[3]) || 10,
+        terms: Number(r[4]) || 30, freq: String(r[5] || "monthly"), debts: [], payments: [] };
+      if (r[6] !== "" && r[6] !== undefined) s.pct = Number(r[6]);
+      if (r[7] !== "" && r[7] !== undefined) s.fixed = Number(r[7]);
+      if (r[8] !== "" && r[8] !== undefined) s.cap = Number(r[8]);
+      return s;
+    }).filter(s => s.name);
+    body("Lignes dettes").filter(r => String(r[6]) !== "1").forEach(r => {
+      const s = suppliers.find(x => x.id === String(r[1]));
+      if (!s) return;
+      const line = { id: String(r[5] || uid()), date: xlsxIsoDate(r[2]), amount: Number(r[3]) || 0 };
+      if (String(r[0]) === "Paiement") { line.note = String(r[4] || ""); s.payments.push(line); }
+      else { line.desc = String(r[4] || ""); s.debts.push(line); }
+    });
+    if (mode === "merge") {
+      products.forEach(p => {
+        const ex = prodById(p.id) || D.products.find(x => x.name === p.name);
+        if (ex) Object.assign(ex, { name: p.name, unit: p.unit, stock: p.stock, buy: p.buy, sell: p.sell, min: p.min });
+        else D.products.push(p);
+      });
+      const sIds = new Set(D.sales.map(s => s.id));
+      sales.forEach(s => { if (!sIds.has(s.id)) D.sales.push(s); });
+      const eIds = new Set(D.expenses.map(e => e.id));
+      expenses.forEach(e => { if (!eIds.has(e.id)) D.expenses.push(e); });
+      if (customers) {
+        if (!D.customers) D.customers = [];
+        customers.forEach(c => {
+          const ex = D.customers.find(x => x.id === c.id);
+          if (!ex) { D.customers.push(c); return; }
+          c.entries.forEach(e => { if (!ex.entries.some(y => y.id === e.id)) ex.entries.push(e); });
+        });
+      }
+      const current = debtList();
+      suppliers.forEach(s => {
+        const ex = current.find(x => x.id === s.id) || current.find(x => x.name === s.name);
+        if (!ex) { current.push(s); return; }
+        const dIds = new Set(ex.debts.map(d => d.id)), pIds = new Set(ex.payments.map(p => p.id));
+        s.debts.forEach(d => { if (!dIds.has(d.id)) ex.debts.push(d); });
+        s.payments.forEach(p => { if (!pIds.has(p.id)) ex.payments.push(p); });
+      });
+      save();
+      localStorage.setItem(DEBT_KEY, JSON.stringify(current));
+    } else {
+      D.products = products; D.sales = sales; D.expenses = expenses; D.cash = cash;
+      if (customers) D.customers = customers;
+      save();
+      localStorage.setItem(DEBT_KEY, JSON.stringify(suppliers));
+    }
+    alert((mode === "merge" ? "Fusion réussie" : "Import réussi") + " : " + products.length + " produits, " + sales.length + " ventes, " + suppliers.length + " fournisseurs.");
+    window.__skipUnload = true; location.reload();
+  } catch (err) {
+    alert("Import impossible : " + err.message);
+  }
+}
+document.getElementById("xlsxExp").addEventListener("click", exportXlsx);
+document.getElementById("xlPwSave").addEventListener("click", () => {
+  const v = document.getElementById("xlPw").value;
+  if (!v) { localStorage.removeItem("calorie-boost-xlpw"); return alert("Code supprimé : le fichier sera ouvert sans code."); }
+  if (!/^[\x20-\x7e]+$/.test(v)) return alert("Utilise seulement des lettres et chiffres (sans accents).");
+  localStorage.setItem("calorie-boost-xlpw", v);
+  document.getElementById("xlPw").value = "";
+  alert("Code enregistré. Télécharge le fichier Excel à nouveau.");
+});
+document.getElementById("xlsxImpBtn").addEventListener("click", () => document.getElementById("xlsxFile").click());
+document.getElementById("xlsxFile").addEventListener("change", importXlsx);
+
+/* ===== Prix conseillés par produit (garantie de vente) ===== */
+function suggestPrices(buy) {
+  const m = margins();
+  return { floor: Math.ceil(buy * (1 + m.min / 100) / 10) * 10, des: Math.ceil(buy * (1 + m.target / 100) / 10) * 10 };
+}
+function sellStatus(p) {
+  if (!(p.buy > 0)) return { cls: "", txt: "Prix d'achat manquant : entre-le pour calculer le prix conseillé." };
+  const s = suggestPrices(p.buy);
+  if (!(p.sell > 0)) return { cls: "out", txt: "⚠ Prix de vente non fixé. Conseil : " + fmt(s.floor) + " (garanti) ou " + fmt(s.des) + " (désiré)." };
+  if (p.sell < floorPrice(p) - 0.005) return { cls: "out", txt: "✖ Sous le plancher : vendre au minimum " + fmt(s.floor) + "." };
+  return { cls: "in", txt: "✔ Garanti " + fmt(s.floor) + " · désiré " + fmt(s.des) };
+}
+function updateProdHint() {
+  const buy = parseFloat(document.getElementById("pBuy").value) || 0;
+  const el = document.getElementById("pHint");
+  if (!buy) { el.textContent = "Entre le prix d'achat pour voir le prix conseillé."; return; }
+  const s = suggestPrices(buy);
+  const sell = parseFloat(document.getElementById("pSell").value) || 0;
+  const st = sell <= 0 ? "⚠ Prix de vente non fixé." : sell < buy * (1 + margins().min / 100) - 0.005 ? "✖ Prix de vente sous le plancher garanti." : "✔ Prix de vente conforme.";
+  el.innerHTML = `<div><strong>Prix garanti conseillé : ${fmt(s.floor)}</strong> (marge min ${margins().min} %)</div>` +
+    `<div>Prix désiré : ${fmt(s.des)} (marge ${margins().target} %)</div><div>${st}</div>`;
+}
+document.getElementById("pBuy").addEventListener("input", updateProdHint);
+document.getElementById("pSell").addEventListener("input", updateProdHint);
+document.getElementById("pUseSug").addEventListener("click", () => {
+  const buy = parseFloat(document.getElementById("pBuy").value) || 0;
+  if (buy) { document.getElementById("pSell").value = suggestPrices(buy).floor; updateProdHint(); }
+});
+document.getElementById("pUseDesired").addEventListener("click", () => {
+  const buy = parseFloat(document.getElementById("pBuy").value) || 0;
+  if (buy) { document.getElementById("pSell").value = suggestPrices(buy).des; updateProdHint(); }
+});
+
+/* ===== Dernière ouverture ===== */
+(function () {
+  const prev = localStorage.getItem("calorie-boost-lastopen");
+  const el = document.getElementById("lastOpen");
+  el.textContent = prev
+    ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+    : "Première ouverture sur cet appareil";
+  try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
+})();
+
+/* ===== Programme complet, sortie et confirmation ===== */
+function exportProgram() {
+  // Données actuelles, à intégrer dans le fichier (sans la configuration de synchronisation)
+  const stockStr = localStorage.getItem(KEY) || "null";
+  const debtStr = localStorage.getItem(DEBT_KEY) || "null";
+  const safe = s => JSON.stringify(s).replace(/<\//g, "<\\/");
+  const seed = "<scr" + "ipt>(function(){try{" +
+    "if(!localStorage.getItem('calorie-boost-stock-v1')&&" + safe(stockStr) + "!=='null'){localStorage.setItem('calorie-boost-stock-v1'," + safe(stockStr) + ");}" +
+    "if(!localStorage.getItem('calorie-boost-dettes-v2')&&" + safe(debtStr) + "!=='null'){localStorage.setItem('calorie-boost-dettes-v2'," + safe(debtStr) + ");}" +
+    "}catch(e){}})();<\/scr" + "ipt>\n";
+  let html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+  html = html.replace("<scr" + "ipt>", seed + "<scr" + "ipt>");
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "gestion-calorie-boost.html";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+document.getElementById("progExp").addEventListener("click", exportProgram);
+document.getElementById("quitBtn").addEventListener("click", () => {
+  document.getElementById("qDone").textContent = "";
+  document.getElementById("quitBox").style.display = "flex";
+});
+document.getElementById("qCancel").addEventListener("click", () => { document.getElementById("quitBox").style.display = "none"; });
+document.getElementById("qExcel").addEventListener("click", () => {
+  exportXlsx();
+  document.getElementById("qDone").textContent = "Fichier Excel téléchargé. Tu peux maintenant fermer le programme.";
+});
+document.getElementById("qQuit").addEventListener("click", () => {
+  window.__skipUnload = true;
+  document.getElementById("quitBox").style.display = "none";
+  document.getElementById("qDone").textContent = "";
+  document.body.innerHTML = '<main style="max-width:480px;margin:40px auto;padding:16px;font-family:system-ui"><h2>Tes données sont enregistrées sur cet appareil.</h2><p>Tu peux fermer cet onglet.</p></main>';
+});
+window.addEventListener("beforeunload", e => {
+  if (window.__skipUnload) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
+/* ===== Catalogue (Nom, Prix achat, Prix vente) : mise à jour par nom, sans toucher aux quantités ===== */
+async function importCatalog(rows) {
+  const data = rows.slice(1).filter(r => r && String(r[0] || "").trim());
+  let upd = 0, add = 0;
+  data.forEach(r => {
+    const name = String(r[0]).trim();
+    const buy = Number(r[1]) || 0, sell = Number(r[2]) || 0;
+    const ex = D.products.find(p => String(p.name).trim() === name);
+    if (ex) { ex.buy = buy; ex.sell = sell; upd++; }
+    else { D.products.push({ id: uid(), name, unit: "unité", stock: 0, buy, sell, min: 2 }); add++; }
+  });
+  save();
+  alert("Catalogue importé : " + upd + " produits mis à jour (prix seulement, quantités gardées), " + add + " ajoutés (stock 0).");
+  window.__skipUnload = true;
+  location.reload();
+}
+
+/* ===== Nouvel inventaire : Nom | Quantité | Prix achat | Prix vente : remplace les produits et leurs quantités ===== */
+async function importInventory(rows) {
+  const data = rows.slice(1).filter(r => r && String(r[0] || "").trim());
+  if (!confirm("Remplacer TOUS les produits et leurs quantités par cette liste (" + data.length + " produits) ?\n\nLes ventes, dettes et paiements déjà enregistrés ne changent pas.")) return;
+  D.products = data.map(r => {
+    const name = String(r[0]).trim();
+    const unit = name.startsWith("عسل") ? "kg" : "unité";
+    return { id: uid(), name, unit, stock: Number(r[1]) || 0, buy: Number(r[2]) || 0, sell: Number(r[3]) || 0, min: unit === "kg" ? 10 : 2 };
+  });
+  save();
+  alert("Inventaire importé : " + data.length + " produits avec leurs quantités.");
+  window.__skipUnload = true;
+  location.reload();
+}
+
+const INV_VERSION = 'inv-185-2026-11-13';
+const INV_PRODUCTS = [{"id": "inv001", "name": "حبوب اللقاح طازج", "unit": "unité", "stock": 12.5, "min": 2, "buy": 1600.0, "sell": 3500.0}, {"id": "inv002", "name": "عسل متعدد الازهار متبلور", "unit": "kg", "stock": 14.5, "min": 10, "buy": 2000.0, "sell": 2500.0}, {"id": "inv003", "name": "عسل غابة (قصبر)", "unit": "kg", "stock": 10.5, "min": 10, "buy": 3500.0, "sell": 4500.0}, {"id": "inv004", "name": "عسل جبلي (قنشورة)", "unit": "kg", "stock": 11.5, "min": 10, "buy": 3500.0, "sell": 5500.0}, {"id": "inv005", "name": "عسل اللبينة", "unit": "kg", "stock": 3.0, "min": 10, "buy": 3500.0, "sell": 6000.0}, {"id": "inv006", "name": "عسل المرار", "unit": "kg", "stock": 51.0, "min": 10, "buy": 2000.0, "sell": 4000.0}, {"id": "inv007", "name": "عسل شوكيات", "unit": "kg", "stock": 38.5, "min": 10, "buy": 2000.0, "sell": 4000.0}, {"id": "inv008", "name": "عسل السدر", "unit": "kg", "stock": 24.5, "min": 10, "buy": 3500.0, "sell": 5500.0}, {"id": "inv009", "name": "عسل الجرجير", "unit": "kg", "stock": 22.0, "min": 10, "buy": 1700.0, "sell": 3500.0}, {"id": "inv010", "name": "عسل شوك الابل", "unit": "kg", "stock": 2.0, "min": 10, "buy": 2000.0, "sell": 4000.0}, {"id": "inv011", "name": "عسل متعدد الازهار (خزامي)", "unit": "kg", "stock": 13.0, "min": 10, "buy": 2500.0, "sell": 4000.0}, {"id": "inv012", "name": "عسل الحبة السوداء", "unit": "kg", "stock": 0.5, "min": 10, "buy": 3000.0, "sell": 6000.0}, {"id": "inv013", "name": "عسل برتقال", "unit": "kg", "stock": 10.0, "min": 10, "buy": 2000.0, "sell": 3000.0}, {"id": "inv014", "name": "عكبر خام", "unit": "unité", "stock": 0.38, "min": 2, "buy": 23000.0, "sell": 50000.0}, {"id": "inv015", "name": "خلطة مكسرات صغيرة", "unit": "unité", "stock": 8.0, "min": 2, "buy": 1000.0, "sell": 2000.0}, {"id": "inv016", "name": "خلطة مكسرات كبيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 1600.0, "sell": 2000.0}, {"id": "inv017", "name": "زعفران حر", "unit": "unité", "stock": 3.0, "min": 2, "buy": 2000.0, "sell": 2500.0}, {"id": "inv018", "name": "تين بزيت زيتون 400غرام", "unit": "unité", "stock": 4.0, "min": 2, "buy": 500.0, "sell": 750.0}, {"id": "inv019", "name": "ماتشا الأصلية", "unit": "unité", "stock": 9.0, "min": 2, "buy": 1600.0, "sell": 2600.0}, {"id": "inv020", "name": "زبدة الشيا", "unit": "unité", "stock": 3.0, "min": 2, "buy": 300.0, "sell": 600.0}, {"id": "inv021", "name": "زيت جوجوبا", "unit": "unité", "stock": 3.0, "min": 2, "buy": 200.0, "sell": 350.0}, {"id": "inv022", "name": "مضاد سعال", "unit": "unité", "stock": 1.0, "min": 2, "buy": 200.0, "sell": 350.0}, {"id": "inv023", "name": "زيت الحبة السوداء سعودية", "unit": "unité", "stock": 2.0, "min": 2, "buy": 1100.0, "sell": 1500.0}, {"id": "inv024", "name": "زيوت كابتن", "unit": "unité", "stock": 12.0, "min": 2, "buy": 200.0, "sell": 350.0}, {"id": "inv025", "name": "زيت ابو قاسم حبة سوداء 60 ملل", "unit": "unité", "stock": 5.0, "min": 2, "buy": 400.0, "sell": 600.0}, {"id": "inv026", "name": "زيت جوز الهند هيماني", "unit": "unité", "stock": 2.0, "min": 2, "buy": 1100.0, "sell": 1500.0}, {"id": "inv027", "name": "زيت جوز الهند عادي", "unit": "unité", "stock": 2.0, "min": 2, "buy": 350.0, "sell": 500.0}, {"id": "inv028", "name": "زيوت فريديم", "unit": "unité", "stock": 4.0, "min": 2, "buy": 500.0, "sell": 750.0}, {"id": "inv029", "name": "اللحسة الصحراوية", "unit": "unité", "stock": 8.0, "min": 2, "buy": 1000.0, "sell": 1400.0}, {"id": "inv030", "name": "زيت نخاع أنثى جمل", "unit": "unité", "stock": 3.0, "min": 2, "buy": 300.0, "sell": 450.0}, {"id": "inv031", "name": "جنكة عشبة", "unit": "unité", "stock": 3.0, "min": 2, "buy": 350.0, "sell": 500.0}, {"id": "inv032", "name": "زيت إكليل مسك يمان", "unit": "unité", "stock": 1.0, "min": 2, "buy": 650.0, "sell": 1000.0}, {"id": "inv033", "name": "خماري عود", "unit": "unité", "stock": 25.0, "min": 2, "buy": 50.0, "sell": 100.0}, {"id": "inv034", "name": "تابيرال", "unit": "unité", "stock": 6.0, "min": 2, "buy": 450.0, "sell": 900.0}, {"id": "inv035", "name": "صابون", "unit": "unité", "stock": 2.0, "min": 2, "buy": 150.0, "sell": 250.0}, {"id": "inv036", "name": "مسك الأسود", "unit": "unité", "stock": 1.0, "min": 2, "buy": 350.0, "sell": 500.0}, {"id": "inv037", "name": "جنكة مربي", "unit": "unité", "stock": 1.0, "min": 2, "buy": 350.0, "sell": 500.0}, {"id": "inv038", "name": "حسكة", "unit": "unité", "stock": 0.38, "min": 2, "buy": 2500.0, "sell": 5000.0}, {"id": "inv039", "name": "فول صويا", "unit": "unité", "stock": 0.8, "min": 2, "buy": 700.0, "sell": 1200.0}, {"id": "inv040", "name": "مورينغا عشبة", "unit": "unité", "stock": 0.2, "min": 2, "buy": 2500.0, "sell": 5000.0}, {"id": "inv041", "name": "قاطونة", "unit": "unité", "stock": 0.8, "min": 2, "buy": 2500.0, "sell": 5000.0}, {"id": "inv042", "name": "قرفة السيلانية", "unit": "unité", "stock": 1.3, "min": 2, "buy": 9000.0, "sell": 15000.0}, {"id": "inv043", "name": "عصا على", "unit": "unité", "stock": 0.5, "min": 2, "buy": 18000.0, "sell": 35000.0}, {"id": "inv044", "name": "كمون صوفي", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1700.0, "sell": 3500.0}, {"id": "inv045", "name": "كمون سوري", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1600.0, "sell": 3500.0}, {"id": "inv046", "name": "ماكا", "unit": "unité", "stock": 1.0, "min": 2, "buy": 5000.0, "sell": 12000.0}, {"id": "inv047", "name": "قسط هندي", "unit": "unité", "stock": 0.2, "min": 2, "buy": 2500.0, "sell": 6500.0}, {"id": "inv048", "name": "صمغ العربي ميزان", "unit": "unité", "stock": 0.25, "min": 2, "buy": 3500.0, "sell": 5800.0}, {"id": "inv049", "name": "الحرف", "unit": "unité", "stock": 0.2, "min": 2, "buy": 2500.0, "sell": 4500.0}, {"id": "inv050", "name": "الفطر الريشي", "unit": "unité", "stock": 0.2, "min": 2, "buy": 18000.0, "sell": 35000.0}, {"id": "inv051", "name": "جلجلان", "unit": "unité", "stock": 2.0, "min": 2, "buy": 470.0, "sell": 1000.0}, {"id": "inv052", "name": "الشيا", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1000.0, "sell": 2000.0}, {"id": "inv053", "name": "الاشوغندا", "unit": "unité", "stock": 3.0, "min": 2, "buy": 4500.0, "sell": 7000.0}, {"id": "inv054", "name": "شوك الابل", "unit": "unité", "stock": 0.5, "min": 2, "buy": 1500.0, "sell": 3000.0}, {"id": "inv055", "name": "بذور الاكبي", "unit": "unité", "stock": 0.5, "min": 2, "buy": 3000.0, "sell": 6000.0}, {"id": "inv056", "name": "زنجبيل مطحون", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1500.0, "sell": 2500.0}, {"id": "inv057", "name": "بذور مورينغا", "unit": "unité", "stock": 1.0, "min": 2, "buy": 2500.0, "sell": 5000.0}, {"id": "inv058", "name": "بابونج", "unit": "unité", "stock": 1.0, "min": 2, "buy": 800.0, "sell": 1500.0}, {"id": "inv059", "name": "سنامكي", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1000.0, "sell": 2500.0}, {"id": "inv060", "name": "كركدية", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1000.0, "sell": 2000.0}, {"id": "inv061", "name": "السدر مطحون", "unit": "unité", "stock": 1.0, "min": 2, "buy": 500.0, "sell": 2000.0}, {"id": "inv062", "name": "البشنة", "unit": "unité", "stock": 1.0, "min": 2, "buy": 500.0, "sell": 2000.0}, {"id": "inv063", "name": "الزقوقي", "unit": "unité", "stock": 0.1, "min": 2, "buy": 2500.0, "sell": 3500.0}, {"id": "inv064", "name": "الحبة السوداء", "unit": "unité", "stock": 1.0, "min": 2, "buy": 800.0, "sell": 1500.0}, {"id": "inv065", "name": "بذور الشمس", "unit": "unité", "stock": 0.5, "min": 2, "buy": 900.0, "sell": 1500.0}, {"id": "inv066", "name": "جنسينغ احمر كوري", "unit": "unité", "stock": 1.0, "min": 2, "buy": 23000.0, "sell": 40000.0}, {"id": "inv067", "name": "جنسينغ الأبيض", "unit": "unité", "stock": 0.2, "min": 2, "buy": 9000.0, "sell": 25000.0}, {"id": "inv068", "name": "أعشاب العروس", "unit": "unité", "stock": 2.0, "min": 2, "buy": 300.0, "sell": 450.0}, {"id": "inv069", "name": "مربي الموتر الكبير", "unit": "unité", "stock": 3.0, "min": 2, "buy": 980.0, "sell": 1400.0}, {"id": "inv070", "name": "الخيرات", "unit": "unité", "stock": 2.0, "min": 2, "buy": 250.0, "sell": 500.0}, {"id": "inv071", "name": "زيوت الحشيش الأفغاني", "unit": "unité", "stock": 2.0, "min": 2, "buy": 650.0, "sell": 1000.0}, {"id": "inv072", "name": "عسل الصويا", "unit": "kg", "stock": 1.0, "min": 10, "buy": 1600.0, "sell": 2500.0}, {"id": "inv073", "name": "عقدة كثيراء الكبيرة", "unit": "unité", "stock": 3.0, "min": 2, "buy": 900.0, "sell": 1400.0}, {"id": "inv074", "name": "عقدة الكثيراء الصغيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 550.0, "sell": 900.0}, {"id": "inv075", "name": "سكودي كبيرة", "unit": "unité", "stock": 1.0, "min": 2, "buy": 900.0, "sell": 1400.0}, {"id": "inv076", "name": "سكودي صغيرة", "unit": "unité", "stock": 1.0, "min": 2, "buy": 550.0, "sell": 900.0}, {"id": "inv077", "name": "المسمنة البغدادية", "unit": "unité", "stock": 2.0, "min": 2, "buy": 900.0, "sell": 1400.0}, {"id": "inv078", "name": "المحلب الشامي", "unit": "unité", "stock": 1.0, "min": 2, "buy": 900.0, "sell": 2000.0}, {"id": "inv079", "name": "دهن الحنظل المصري", "unit": "unité", "stock": 5.0, "min": 2, "buy": 450.0, "sell": 900.0}, {"id": "inv080", "name": "دهن الحنضل السعودي", "unit": "unité", "stock": 12.0, "min": 2, "buy": 700.0, "sell": 1700.0}, {"id": "inv081", "name": "عسل الجنسينغ الكبيرة", "unit": "kg", "stock": 6.0, "min": 10, "buy": 1650.0, "sell": 2500.0}, {"id": "inv082", "name": "حنة رواس كتم انديقو مشاط تبيرمة", "unit": "unité", "stock": 17.0, "min": 2, "buy": 350.0, "sell": 600.0}, {"id": "inv083", "name": "وزنة السكري", "unit": "unité", "stock": 2.0, "min": 2, "buy": 550.0, "sell": 900.0}, {"id": "inv084", "name": "تيزانة قولون", "unit": "unité", "stock": 1.0, "min": 2, "buy": 550.0, "sell": 1000.0}, {"id": "inv085", "name": "قشور البسيليوم", "unit": "unité", "stock": 2.0, "min": 2, "buy": 500.0, "sell": 700.0}, {"id": "inv086", "name": "صمغ العربي كيس", "unit": "unité", "stock": 3.0, "min": 2, "buy": 900.0, "sell": 1200.0}, {"id": "inv087", "name": "Be perfect", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1800.0, "sell": 3200.0}, {"id": "inv088", "name": "سكر التمر الباسقة", "unit": "unité", "stock": 17.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv089", "name": "سكر التمر", "unit": "unité", "stock": 8.0, "min": 2, "buy": 130.0, "sell": 250.0}, {"id": "inv090", "name": "شوفان بيو", "unit": "unité", "stock": 2.0, "min": 2, "buy": 200.0, "sell": 250.0}, {"id": "inv091", "name": "أرز تايلندي", "unit": "unité", "stock": 9.0, "min": 2, "buy": 300.0, "sell": 350.0}, {"id": "inv092", "name": "قرانولا الباسقة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 300.0, "sell": 450.0}, {"id": "inv093", "name": "زيت الزيتون البكر بغلية 0.5 لتر", "unit": "unité", "stock": 1.0, "min": 2, "buy": 750.0, "sell": 850.0}, {"id": "inv094", "name": "زيت زيتون البكر بغلية 0.25 لتر", "unit": "unité", "stock": 1.0, "min": 2, "buy": 400.0, "sell": 450.0}, {"id": "inv095", "name": "زيت بدراوى البكر 0.5 لتر", "unit": "unité", "stock": 1.0, "min": 2, "buy": 650.0, "sell": 750.0}, {"id": "inv096", "name": "قرانولا نتريفيت 1كلغ", "unit": "unité", "stock": 25.0, "min": 2, "buy": 870.0, "sell": 1000.0}, {"id": "inv097", "name": "شوفان ماجيكو", "unit": "unité", "stock": 3.0, "min": 2, "buy": 280.0, "sell": 380.0}, {"id": "inv098", "name": "شوفان مسحوق نتريفيت 1كلغ", "unit": "unité", "stock": 14.0, "min": 2, "buy": 570.0, "sell": 700.0}, {"id": "inv099", "name": "باسقة روينة تمر 1كلغ", "unit": "unité", "stock": 7.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv100", "name": "باك توابل مغنية", "unit": "unité", "stock": 10.0, "min": 2, "buy": 600.0, "sell": 1000.0}, {"id": "inv101", "name": "التلبينة النبوية الباسقة", "unit": "unité", "stock": 5.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv102", "name": "شاي ماتشا slim", "unit": "unité", "stock": 7.0, "min": 2, "buy": 500.0, "sell": 700.0}, {"id": "inv103", "name": "شاي مروان", "unit": "unité", "stock": 2.0, "min": 2, "buy": 300.0, "sell": 450.0}, {"id": "inv104", "name": "شاي براد حديد", "unit": "unité", "stock": 3.0, "min": 2, "buy": 500.0, "sell": 750.0}, {"id": "inv105", "name": "شاي احمر", "unit": "unité", "stock": 7.0, "min": 2, "buy": 300.0, "sell": 500.0}, {"id": "inv106", "name": "روينة قمح", "unit": "unité", "stock": 6.0, "min": 2, "buy": 170.0, "sell": 250.0}, {"id": "inv107", "name": "مسحوق الخروب", "unit": "unité", "stock": 1.0, "min": 2, "buy": 170.0, "sell": 250.0}, {"id": "inv108", "name": "كابتن زنجبيل", "unit": "unité", "stock": 3.0, "min": 2, "buy": 200.0, "sell": 350.0}, {"id": "inv109", "name": "زيت زيتون البكر ممتاز بدراوى 0.25 لتر", "unit": "unité", "stock": 16.0, "min": 2, "buy": 330.0, "sell": 450.0}, {"id": "inv110", "name": "زيت الزيتون البكر ممتاز بدراوى 0.5لتر", "unit": "unité", "stock": 15.0, "min": 2, "buy": 700.0, "sell": 800.0}, {"id": "inv111", "name": "زيت زيتون بكر افيري 0.5 لتر", "unit": "unité", "stock": 6.0, "min": 2, "buy": 650.0, "sell": 750.0}, {"id": "inv112", "name": "زيت الزيتون البكر افيري 0.75لتر", "unit": "unité", "stock": 1.0, "min": 2, "buy": 900.0, "sell": 1000.0}, {"id": "inv113", "name": "زيت زيتون القطرة الخضراء 1لتر", "unit": "unité", "stock": 7.0, "min": 2, "buy": 950.0, "sell": 1100.0}, {"id": "inv114", "name": "زيت الزيتون البكر بدراوى 0.75", "unit": "unité", "stock": 9.0, "min": 2, "buy": 950.0, "sell": 1100.0}, {"id": "inv115", "name": "زيت الزيتون البكر بدراوي 0.25 لتر", "unit": "unité", "stock": 1.0, "min": 2, "buy": 330.0, "sell": 400.0}, {"id": "inv116", "name": "زيت الزيتون البكر بدراوى 0.5 لتر", "unit": "unité", "stock": 11.0, "min": 2, "buy": 650.0, "sell": 750.0}, {"id": "inv117", "name": "زيت الزيتون البكر بدراوى 3لتر", "unit": "unité", "stock": 1.0, "min": 2, "buy": 2900.0, "sell": 3200.0}, {"id": "inv118", "name": "زيت الزيتون البكر بدراوى 2لتر", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1900.0, "sell": 2200.0}, {"id": "inv119", "name": "خل التفاح العضوي كبير", "unit": "unité", "stock": 4.0, "min": 2, "buy": 550.0, "sell": 700.0}, {"id": "inv120", "name": "خل تفاح العضوي صغير", "unit": "unité", "stock": 2.0, "min": 2, "buy": 400.0, "sell": 500.0}, {"id": "inv121", "name": "ماء الزعتر", "unit": "unité", "stock": 3.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv122", "name": "ماء الشيح", "unit": "unité", "stock": 4.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv123", "name": "ماء ورد هيماني", "unit": "unité", "stock": 4.0, "min": 2, "buy": 400.0, "sell": 500.0}, {"id": "inv124", "name": "ماء ورد ابوسالم صغير", "unit": "unité", "stock": 4.0, "min": 2, "buy": 200.0, "sell": 250.0}, {"id": "inv125", "name": "ماء ورد ابوسالم كبير", "unit": "unité", "stock": 3.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv126", "name": "خل تين شوكي كبير", "unit": "unité", "stock": 1.0, "min": 2, "buy": 450.0, "sell": 600.0}, {"id": "inv127", "name": "خل تين شوكي صغير", "unit": "unité", "stock": 4.0, "min": 2, "buy": 350.0, "sell": 350.0}, {"id": "inv128", "name": "مشروب البيو ابيتي", "unit": "unité", "stock": 5.0, "min": 2, "buy": 170.0, "sell": 250.0}, {"id": "inv129", "name": "مشروب كاليتوس", "unit": "unité", "stock": 4.0, "min": 2, "buy": 170.0, "sell": 250.0}, {"id": "inv130", "name": "مشروب فتح الشهية اطفال", "unit": "unité", "stock": 4.0, "min": 2, "buy": 170.0, "sell": 250.0}, {"id": "inv131", "name": "مشروب جنسينغ", "unit": "unité", "stock": 2.0, "min": 2, "buy": 250.0, "sell": 450.0}, {"id": "inv132", "name": "مشروب بروبوليس", "unit": "unité", "stock": 3.0, "min": 2, "buy": 250.0, "sell": 450.0}, {"id": "inv133", "name": "مشروب الجنكا", "unit": "unité", "stock": 1.0, "min": 2, "buy": 170.0, "sell": 250.0}, {"id": "inv134", "name": "مشروب ديدان", "unit": "unité", "stock": 3.0, "min": 2, "buy": 170.0, "sell": 250.0}, {"id": "inv135", "name": "ماء ورد ماء الزهر مقطر", "unit": "unité", "stock": 45.0, "min": 2, "buy": 450.0, "sell": 550.0}, {"id": "inv136", "name": "لباب تمر كبيرة", "unit": "unité", "stock": 10.0, "min": 2, "buy": 500.0, "sell": 600.0}, {"id": "inv137", "name": "لباب تمر صغيرة", "unit": "unité", "stock": 3.0, "min": 2, "buy": 300.0, "sell": 350.0}, {"id": "inv138", "name": "دبس الخروب باسقة", "unit": "unité", "stock": 10.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv139", "name": "خل تمر", "unit": "unité", "stock": 11.0, "min": 2, "buy": 200.0, "sell": 250.0}, {"id": "inv140", "name": "دبس خروب كروما", "unit": "unité", "stock": 5.0, "min": 2, "buy": 500.0, "sell": 600.0}, {"id": "inv141", "name": "دبس التمر 700غ", "unit": "unité", "stock": 1.0, "min": 2, "buy": 350.0, "sell": 450.0}, {"id": "inv142", "name": "دبس الخروب 900غرام", "unit": "unité", "stock": 1.0, "min": 2, "buy": 500.0, "sell": 700.0}, {"id": "inv143", "name": "عسل تمر هزار", "unit": "kg", "stock": 4.0, "min": 10, "buy": 200.0, "sell": 250.0}, {"id": "inv144", "name": "دبس التمر 450غ", "unit": "unité", "stock": 9.0, "min": 2, "buy": 350.0, "sell": 450.0}, {"id": "inv145", "name": "طحينة السمسم كبيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 400.0, "sell": 500.0}, {"id": "inv146", "name": "جوز هند مجفف 1 كلغ", "unit": "unité", "stock": 1.0, "min": 2, "buy": 2000.0, "sell": 2500.0}, {"id": "inv147", "name": "فواكه مجففة 400غرام", "unit": "unité", "stock": 1.0, "min": 2, "buy": 2000.0, "sell": 2500.0}, {"id": "inv148", "name": "شهدة 1.3 كلغ", "unit": "unité", "stock": 1.3, "min": 2, "buy": 3000.0, "sell": 4500.0}, {"id": "inv149", "name": "مكسرات حلوة 10.5 كلغ", "unit": "unité", "stock": 10.5, "min": 2, "buy": 3000.0, "sell": 4500.0}, {"id": "inv150", "name": "مربي الحلبة", "unit": "unité", "stock": 5.0, "min": 2, "buy": 200.0, "sell": 250.0}, {"id": "inv151", "name": "زبيب اسود 3.2 كلغ", "unit": "unité", "stock": 3.2, "min": 2, "buy": 950.0, "sell": 1300.0}, {"id": "inv152", "name": "التلبينة أبراج", "unit": "unité", "stock": 10.0, "min": 2, "buy": 200.0, "sell": 250.0}, {"id": "inv153", "name": "التلبينة وقاري", "unit": "unité", "stock": 16.0, "min": 2, "buy": 200.0, "sell": 250.0}, {"id": "inv154", "name": "شاي فواكه", "unit": "unité", "stock": 3.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv155", "name": "شاي توراق", "unit": "unité", "stock": 6.0, "min": 2, "buy": 170.0, "sell": 200.0}, {"id": "inv156", "name": "كبير تيزانة", "unit": "unité", "stock": 21.0, "min": 2, "buy": 170.0, "sell": 200.0}, {"id": "inv157", "name": "ديلماح", "unit": "unité", "stock": 18.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv158", "name": "ماء زمزم 5لتر", "unit": "unité", "stock": 1.0, "min": 2, "buy": 3500.0, "sell": 4500.0}, {"id": "inv159", "name": "شاي كمية", "unit": "unité", "stock": 75.0, "min": 2, "buy": 220.0, "sell": 250.0}, {"id": "inv160", "name": "شاب الهوى", "unit": "unité", "stock": 3.0, "min": 2, "buy": 200.0, "sell": 250.0}, {"id": "inv161", "name": "شاب براد 100غرام", "unit": "unité", "stock": 4.0, "min": 2, "buy": 150.0, "sell": 190.0}, {"id": "inv162", "name": "شاي الأرقم", "unit": "unité", "stock": 29.0, "min": 2, "buy": 350.0, "sell": 450.0}, {"id": "inv163", "name": "بديل السكر ماجيك", "unit": "unité", "stock": 26.0, "min": 2, "buy": 110.0, "sell": 130.0}, {"id": "inv164", "name": "ملح هملايا 250غرام", "unit": "unité", "stock": 1.0, "min": 2, "buy": 350.0, "sell": 600.0}, {"id": "inv165", "name": "ملح هملايا 125غرام", "unit": "unité", "stock": 12.0, "min": 2, "buy": 250.0, "sell": 350.0}, {"id": "inv166", "name": "ملح الانجليزي 500غرام", "unit": "unité", "stock": 1.0, "min": 2, "buy": 3500.0, "sell": 4500.0}, {"id": "inv167", "name": "سم النحل مرهم الأصلي", "unit": "unité", "stock": 6.0, "min": 2, "buy": 550.0, "sell": 1000.0}, {"id": "inv168", "name": "هيلتي", "unit": "unité", "stock": 10.0, "min": 2, "buy": 200.0, "sell": 350.0}, {"id": "inv169", "name": "بلارة ملكي صغيرة", "unit": "unité", "stock": 13.0, "min": 2, "buy": 500.0, "sell": 900.0}, {"id": "inv170", "name": "بلارة ملكي كبيرة", "unit": "unité", "stock": 1.0, "min": 2, "buy": 1500.0, "sell": 2500.0}, {"id": "inv171", "name": "عسل ملكي", "unit": "kg", "stock": 65.0, "min": 10, "buy": 200.0, "sell": 400.0}, {"id": "inv172", "name": "شداد", "unit": "unité", "stock": 14.0, "min": 2, "buy": 170.0, "sell": 250.0}, {"id": "inv173", "name": "Brest", "unit": "unité", "stock": 1.0, "min": 2, "buy": 3500.0, "sell": 4500.0}, {"id": "inv174", "name": "تاستي كالم", "unit": "unité", "stock": 8.0, "min": 2, "buy": 900.0, "sell": 1500.0}, {"id": "inv175", "name": "تحاميل اكبي", "unit": "unité", "stock": 2.0, "min": 2, "buy": 2500.0, "sell": 3500.0}, {"id": "inv176", "name": "سترونج بودي", "unit": "unité", "stock": 3.0, "min": 2, "buy": 550.0, "sell": 1000.0}, {"id": "inv177", "name": "البلبل صغيرة", "unit": "unité", "stock": 1.0, "min": 2, "buy": 550.0, "sell": 900.0}, {"id": "inv178", "name": "البلبل كبيرة", "unit": "unité", "stock": 2.0, "min": 2, "buy": 900.0, "sell": 1400.0}, {"id": "inv179", "name": "كريمة الاكبي", "unit": "unité", "stock": 1.0, "min": 2, "buy": 450.0, "sell": 800.0}, {"id": "inv180", "name": "شمع الهوبي", "unit": "unité", "stock": 3.0, "min": 2, "buy": 170.0, "sell": 250.0}, {"id": "inv181", "name": "عجوة المدينة", "unit": "unité", "stock": 1.0, "min": 2, "buy": 3500.0, "sell": 4500.0}, {"id": "inv182", "name": "زبدة فول سوداني الباسقة 300غرام", "unit": "unité", "stock": 7.0, "min": 2, "buy": 350.0, "sell": 450.0}, {"id": "inv183", "name": "زبدة فول سوداني هزار 400غرام", "unit": "unité", "stock": 2.0, "min": 2, "buy": 300.0, "sell": 400.0}, {"id": "inv184", "name": "زبدة فول سوداني تاستي 350غرام", "unit": "unité", "stock": 7.0, "min": 2, "buy": 350.0, "sell": 450.0}, {"id": "inv185", "name": "زبدة البندق", "unit": "unité", "stock": 6.0, "min": 2, "buy": 450.0, "sell": 450.0}];
+
+/* ===== Clients (crédit) ===== */
+function custBalance(c) { return c.entries.reduce((a, e) => a + (e.type === "payment" ? -e.amount : e.amount), 0); }
+function findOrCreateCustomer(name) {
+  if (!D.customers) D.customers = [];
+  const t = String(name).trim().toLowerCase();
+  let c = D.customers.find(x => x.name.trim().toLowerCase() === t);
+  if (!c) { c = { id: uid(), name: String(name).trim(), entries: [] }; D.customers.push(c); }
+  return c;
+}
+function renderCustomers() {
+  if (!D.customers) D.customers = [];
+  const list = D.customers;
+  document.getElementById("custNames").innerHTML = list.map(c => `<option value="${esc(c.name)}">`).join("");
+  const sel = document.getElementById("cSel");
+  const cur = sel.value;
+  sel.innerHTML = list.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  if (cur && list.some(c => c.id === cur)) sel.value = cur;
+  document.getElementById("cList").innerHTML = list.length
+    ? [...list].sort((a, b) => custBalance(b) - custBalance(a)).map(c => `<div class="item"><div class="name">${esc(c.name)}</div><div class="qty ${custBalance(c) > 0 ? "out" : "in"}">${fmt(custBalance(c))}</div></div>`).join("")
+    : `<div class="empty">Aucun client</div>`;
+  const c = list.find(x => x.id === sel.value);
+  if (!c) { document.getElementById("cHist").innerHTML = ""; document.getElementById("cBalTxt").textContent = ""; return; }
+  document.getElementById("cBalTxt").innerHTML = `Dû par <strong>${esc(c.name)}</strong> : <span class="${custBalance(c) > 0 ? "out" : "in"}">${fmt(custBalance(c))}</span>`;
+  document.getElementById("cHist").innerHTML = [...c.entries].reverse().slice(0, 40).map(e => {
+    const isSale = e.type === "sale";
+    const actions = isSale
+      ? `<div class="meta">Vente : à modifier dans Ventes</div>`
+      : `<div class="actions"><button class="small ghost" data-ce="${e.id}">Modifier</button><button class="small danger" data-cd="${e.id}">Supprimer</button></div>`;
+    return `<div class="item" style="padding:6px 0"><div style="flex:1"><div class="meta">${esc(e.date)} · ${esc(e.desc || "")}</div>${actions}</div>
+      <div class="qty ${e.type === "payment" ? "in" : "out"}">${e.type === "payment" ? "−" : "+"}${fmt(e.amount)}</div></div>`;
+  }).join("") || `<div class="empty">Aucune opération</div>`;
+}
+document.getElementById("cHist").addEventListener("click", ev => {
+  const c = D.customers.find(x => x.id === document.getElementById("cSel").value);
+  if (!c) return;
+  const delId = ev.target.dataset.cd, editId = ev.target.dataset.ce;
+  if (delId) {
+    /* Confirmation dans la page (sans fenêtre du navigateur) : 1er clic = Confirmer, 2e clic = supprimer */
+    if (ev.target.dataset.armed !== "1") {
+      ev.target.dataset.armed = "1";
+      ev.target.textContent = "Confirmer ?";
+      return;
+    }
+    c.entries = c.entries.filter(x => x.id !== delId);
+    renderAll();
+    return;
+  }
+  if (editId) {
+    const en = c.entries.find(x => x.id === editId);
+    if (!en) return;
+    const amt = parseFloat(prompt("Nouveau montant (DA)", en.amount));
+    if (!amt || amt <= 0) return;
+    const desc = prompt("Description", en.desc || "");
+    if (desc === null) return;
+    const date = prompt("Date (AAAA-MM-JJ)", en.date);
+    en.amount = amt;
+    en.desc = desc.trim() || en.desc;
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) en.date = date.trim();
+    renderAll();
+  }
+});
+document.getElementById("cAdd").addEventListener("click", () => {
+  const name = document.getElementById("cName").value.trim();
+  if (!name) return alert("Mets le nom du client.");
+  if (D.customers.some(c => c.name.trim().toLowerCase() === name.toLowerCase())) return alert("Ce client existe déjà.");
+  D.customers.push({ id: uid(), name, entries: [] });
+  document.getElementById("cName").value = "";
+  renderAll();
+});
+document.getElementById("cSel").addEventListener("change", renderCustomers);
+function customerOp(type) {
+  const c = D.customers.find(x => x.id === document.getElementById("cSel").value);
+  const amt = parseFloat(document.getElementById("cAmt").value);
+  if (!c) return alert("Choisis un client.");
+  if (!amt || amt <= 0) return alert("Mets un montant.");
+  const desc = document.getElementById("cDesc").value.trim();
+  if (type === "payment") c.entries.push({ id: uid(), date: today(), amount: amt, type: "payment", desc: desc || "Paiement reçu" });
+  else c.entries.push({ id: uid(), date: today(), amount: amt, type: "debt", desc: desc || "Dette ajoutée" });
+  document.getElementById("cAmt").value = "";
+  document.getElementById("cDesc").value = "";
+  renderAll();
+}
+document.getElementById("cDebt").addEventListener("click", () => customerOp("debt"));
+document.getElementById("cPay").addEventListener("click", () => customerOp("payment"));
+
+D = load();
+/* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
+if (localStorage.getItem("calorie-boost-inv-version") !== INV_VERSION) {
+  D.products = INV_PRODUCTS.map(p => Object.assign({}, p));
+  localStorage.setItem("calorie-boost-inv-version", INV_VERSION);
+  save();
+}
+renderAll();
+renderProducts();
+document.getElementById("bDate").value = today();
+renderBuyForm();
+
+(function(){
+
+const KEY = "calorie-boost-dettes-v2";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Math.round(n).toLocaleString("fr-FR") + " DA";
+const uid = () => Math.random().toString(36).slice(2, 10);
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const monthOf = d => (d || today()).slice(0, 7);
+const lastPay = s => {
+  if (!s.payments.length) return "aucun paiement";
+  const last = s.payments.map(p => p.date).sort().pop();
+  return last;
+};
+
+function seed() {
+  return [
+    { id: "bioasis", name: "Bioasis", note: "", dueDay: 10, terms: 30, pct: 70,
+      debts: [{ id: uid(), date: "2026-11-12", amount: 780000, desc: "Solde initial" }], payments: [] },
+    { id: "makkawi", name: "Makkawi (مكاوي)", note: "", dueDay: 10, terms: 30, fixed: 50000,
+      debts: [{ id: uid(), date: "2026-11-12", amount: 680000, desc: "Solde initial" }],
+      payments: [
+        { id: uid(), date: "2026-11-13", amount: 60000, note: "Paiement" },
+        { id: uid(), date: "2026-11-13", amount: 25500, note: "Ajustement pour atteindre 594 500 DA restants" }
+      ] },
+    { id: "matmour", name: "مكسرات", note: "Fruits à coque", dueDay: 15, terms: 15, freq: "biweekly",
+      debts: [{ id: uid(), date: "2026-11-12", amount: 20000, desc: "Solde initial" }], payments: [] },
+    { id: "abusalah", name: "Abu Salah (ابو صلاح)", note: "Fournisseur de مقويات", dueDay: 10, terms: 30,
+      debts: [{ id: uid(), date: "2026-11-12", amount: 120000, desc: "Solde initial" }], payments: [] },
+    { id: "ibrahim", name: "Ibrahim (إبراهيم)", note: "Miel", dueDay: 10, terms: 30,
+      debts: [{ id: uid(), date: "2026-11-12", amount: 130000, desc: "Solde initial" }],
+      payments: [{ id: uid(), date: "2026-11-13", amount: 10000, note: "Paiement" }] },
+    { id: "milloud", name: "مليود أعشاب", note: "Herbes", dueDay: 10, terms: 30, pct: 50,
+      debts: [{ id: uid(), date: "2026-11-12", amount: 120000, desc: "Solde initial" }], payments: [] },
+    { id: "basqa", name: "Basqa (باسقة)", note: "", dueDay: 10, terms: 30,
+      debts: [{ id: uid(), date: "2026-11-12", amount: 30000, desc: "Solde initial" }], payments: [] }
+  ];
+}
+
+let S;
+function migrate(arr) {
+  arr.forEach(s => {
+    if (!s.freq) s.freq = "monthly";
+    if (s.id === "matmour") { s.name = "مكسرات"; s.freq = "biweekly"; s.dueDay = 15; s.terms = 15; }
+    if (s.id === "milloud") { s.name = "مليود أعشاب"; s.pct = 50; }
+    if (s.id === "bioasis") { s.pct = 70; delete s.cap; }
+    if (s.id === "makkawi") { s.fixed = 50000; delete s.cap; }
+  });
+  return arr;
+}
+function load() {
+  try { const v = JSON.parse(localStorage.getItem(KEY)); if (Array.isArray(v) && v.length) return migrate(v); } catch (e) {}
+  return seed();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} if (window.markChanged) window.markChanged(); }
+
+const totalDebt = s => s.debts.reduce((a, d) => a + d.amount, 0);
+const totalPaid = s => s.payments.reduce((a, p) => a + p.amount, 0);
+const remaining = s => Math.max(0, totalDebt(s) - totalPaid(s));
+const paidInMonth = (s, m) => s.payments.filter(p => monthOf(p.date) === m).reduce((a, p) => a + p.amount, 0);
+const allRemaining = () => S.reduce((a, s) => a + remaining(s), 0);
+
+function status(s, m) {
+  if (remaining(s) <= 0) return { cls: "b-done", txt: "Soldé" };
+  const now = new Date();
+  const curMonth = monthOf(today());
+  const target = requiredMonthly(s);
+  if (s.freq === "biweekly") {
+    const day = now.getDate();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const first = day <= 15;
+    const pStart = curMonth + (first ? "-01" : "-16");
+    const pEnd = first ? 15 : lastDay;
+    const pEndStr = curMonth + "-" + String(pEnd).padStart(2, "0");
+    const paidP = s.payments.filter(p => p.date >= pStart && p.date <= pEndStr).reduce((a, p) => a + p.amount, 0);
+    if (paidP >= target && target > 0) return { cls: "b-ok", txt: "À jour cette période" };
+    if (day > pEnd) return { cls: "b-late", txt: "En retard" };
+    return { cls: "b-todo", txt: "À payer avant le " + pEnd };
+  }
+  const paid = paidInMonth(s, curMonth);
+  const due = s.dueDay || 10;
+  if (paid >= target && target > 0) return { cls: "b-ok", txt: "À jour ce mois" };
+  if (now.getDate() > due) return { cls: "b-late", txt: "En retard" };
+  return { cls: "b-todo", txt: "À payer avant le " + due };
+}
+
+function requiredPct(s) {
+  const rem = remaining(s);
+  if (s.pct) return s.pct;
+  return rem > 300000 ? 5 : rem >= 50000 ? 10 : 70;
+}
+function requiredMonthly(s) {
+  const rem = remaining(s);
+  if (rem <= 0) return 0;
+  if (s.fixed) return Math.min(s.fixed, rem);
+  const amt = Math.ceil(rem * requiredPct(s) / 100);
+  return s.cap ? Math.min(amt, s.cap) : amt;
+}
+function monthlyShare(s) {
+  const months = Math.max(1, parseInt(document.getElementById("planMonths").value, 10) || 1);
+  const total = allRemaining();
+  if (!total) return 0;
+  return Math.ceil((remaining(s) / months));
+}
+
+function renderDash() {
+  const debtTotal = S.reduce((a, s) => a + totalDebt(s), 0);
+  const paidTotal = S.reduce((a, s) => a + totalPaid(s), 0);
+  const rem = allRemaining();
+  document.getElementById("kTotal").textContent = fmt(rem);
+  const pct = debtTotal ? (paidTotal / debtTotal) * 100 : 0;
+  document.getElementById("kBar").style.width = Math.min(100, pct).toFixed(1) + "%";
+  document.getElementById("kBarLabel").textContent = fmt(paidTotal) + " remboursés sur " + fmt(debtTotal);
+
+  const m = monthOf(today());
+  const paidThisMonth = S.reduce((a, s) => a + paidInMonth(s, m), 0);
+  document.getElementById("kMonthPaid").textContent = fmt(paidThisMonth);
+
+  const months = Math.max(1, parseInt(document.getElementById("planMonths").value, 10) || 1);
+  document.getElementById("kMonths").textContent = months;
+  document.getElementById("kTarget").textContent = fmt(rem / months);
+
+  const late = S.filter(s => status(s, m).cls === "b-late").length;
+  document.getElementById("kLate").textContent = late;
+
+  document.getElementById("planOut").innerHTML = `
+    <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Total à rembourser</span><strong>${fmt(rem)}</strong></div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Par mois sur ${months} mois</span><strong>${fmt(rem / months)}</strong></div>`;
+
+  const sl = document.getElementById("statusList");
+  sl.innerHTML = S.map(s => {
+    const st = status(s, m);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);gap:8px">
+      <div><div class="name">${esc(s.name)}</div><div class="note">Reste ${fmt(remaining(s))} · minimum ce mois ${fmt(requiredMonthly(s))} · dernier paiement : ${esc(lastPay(s))}</div></div>
+      <span class="badge ${st.cls}">${st.txt}</span></div>`;
+  }).join("") || `<div class="empty">Aucun fournisseur</div>`;
+}
+
+function renderSuppliers() {
+  const box = document.getElementById("supList");
+  if (!S.length) { box.innerHTML = `<div class="empty">Aucun fournisseur. Ajoute-en un dans l'onglet "Ajouter".</div>`; return; }
+  box.innerHTML = S.map(s => {
+    const hist = [
+      ...s.debts.map(d => ({ date: d.date, label: "Dette : " + (d.desc || ""), amount: "+" + fmt(d.amount), sort: d.date })),
+      ...s.payments.map(p => ({ date: p.date, label: "Paiement" + (p.note ? " : " + p.note : ""), amount: "−" + fmt(p.amount), sort: p.date }))
+    ].sort((a, b) => b.sort.localeCompare(a.sort)).slice(0, 4);
+    return `<div class="card">
+      <div class="sup-head">
+        <div><div class="name">${esc(s.name)}</div><div class="note">${esc(s.note)}</div>
+        <div class="note">${s.freq === "biweekly" ? "Paiement tous les 15 jours" : "Échéance : le " + s.dueDay + " du mois"} · délai ${s.terms} j</div><div class="note">Minimum ${s.freq === "biweekly" ? "par 15 jours" : "ce mois"} : ${fmt(requiredMonthly(s))}${s.fixed ? "" : " (" + requiredPct(s) + "% du restant)"}</div><div class="note">Dernier paiement : ${esc(lastPay(s))}</div></div>
+        <div class="amt">${fmt(remaining(s))}<div class="note">sur ${fmt(totalDebt(s))}</div></div>
+      </div>
+      <div class="actions">
+        <button class="small ghost" data-edit="${s.id}">Modifier</button>
+        <button class="small ghost" data-fix="${s.id}">Corriger le restant</button>
+        <button class="small danger" data-del="${s.id}">Supprimer</button>
+      </div>
+      <div class="row" style="margin-top:8px"><select data-qtype="${s.id}" style="flex:0 0 auto;min-width:0"><option value="pay">Paiement reçu</option><option value="debt">Dette ajoutée</option><option value="fix">Restant réel =</option></select><input type="number" min="0" step="100" placeholder="Montant (DA)" data-qamt="${s.id}"><button class="small" data-qapply="${s.id}">Appliquer</button></div>
+      ${hist.length ? `<div class="hist">${hist.map(h => `<div><span>${esc(h.date)} · ${esc(h.label)}</span><span>${h.amount}</span></div>`).join("")}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+function fillSelects() {
+  const opts = S.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("");
+  ["pSup", "dSup", "cSup"].forEach(id => document.getElementById(id).innerHTML = opts);
+}
+
+function renderPayments() {
+  const months = {};
+  S.forEach(s => s.payments.forEach(p => {
+    const m = monthOf(p.date);
+    months[m] = (months[m] || 0) + p.amount;
+  }));
+  const keys = Object.keys(months).sort().reverse();
+  document.getElementById("monthList").innerHTML = keys.length
+    ? keys.map(k => `<div class="month"><span>${k}</span><strong>${fmt(months[k])}</strong></div>`).join("")
+    : `<div class="empty">Aucun paiement enregistré</div>`;
+
+  const all = [];
+  S.forEach(s => s.payments.forEach(p => all.push({ s, p })));
+  all.sort((a, b) => b.p.date.localeCompare(a.p.date));
+  document.getElementById("payList").innerHTML = all.slice(0, 20).map(({ s, p }) =>
+    `<div class="month"><span>${esc(p.date)} · ${esc(s.name)}${p.note ? " · " + esc(p.note) : ""}</span>
+     <span style="display:flex;gap:6px;align-items:center"><strong>${fmt(p.amount)}</strong>
+     <button class="small danger" data-delpay="${s.id}|${p.id}">×</button></span></div>`
+  ).join("") || `<div class="empty">Aucun paiement</div>`;
+}
+
+function renderAll() { fillSelects(); renderDash(); renderSuppliers(); renderPayments(); save(); }
+
+/* Navigation */
+document.querySelectorAll(".dtab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".dtab").forEach(x => x.classList.remove("on"));
+  t.classList.add("on");
+  ["dash", "sup", "pay", "add"].forEach(k => document.getElementById("dtab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
+}));
+
+/* Fournisseurs : formulaire */
+function resetForm() {
+  document.getElementById("formTitle").textContent = "Ajouter un fournisseur";
+  ["fId", "fName", "fNote"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("fDue").value = 10;
+  document.getElementById("fTerms").value = 30;
+  document.getElementById("fDebt").value = 0;
+}
+document.getElementById("fCancel").addEventListener("click", resetForm);
+document.getElementById("fSave").addEventListener("click", () => {
+  const name = document.getElementById("fName").value.trim();
+  if (!name) return alert("Mets le nom du fournisseur.");
+  const id = document.getElementById("fId").value;
+  const dueDay = Math.min(31, Math.max(1, parseInt(document.getElementById("fDue").value, 10) || 10));
+  const terms = Math.max(0, parseInt(document.getElementById("fTerms").value, 10) || 0);
+  const note = document.getElementById("fNote").value.trim();
+  const debt = parseFloat(document.getElementById("fDebt").value) || 0;
+  if (id) {
+    const s = S.find(x => x.id === id);
+    Object.assign(s, { name, note, dueDay, terms });
+  } else {
+    const s = { id: uid(), name, note, dueDay, terms, debts: [], payments: [] };
+    if (debt > 0) s.debts.push({ id: uid(), date: today(), amount: debt, desc: "Solde initial" });
+    S.push(s);
+  }
+  resetForm(); renderAll();
+  document.querySelector('.dtab[data-tab="sup"]').click();
+});
+
+document.getElementById("supList").addEventListener("click", e => {
+  const t = e.target;
+  if (t.dataset.qapply) {
+    const id = t.dataset.qapply;
+    const s = S.find(x => x.id === id);
+    const type = document.querySelector(`select[data-qtype="${id}"]`).value;
+    const amt = parseFloat(document.querySelector(`input[data-qamt="${id}"]`).value);
+    if (!s || isNaN(amt) || amt < 0) return alert("Mets un montant valide.");
+    const d = today();
+    if (type === "pay") {
+      const applied = Math.min(amt, remaining(s));
+      if (applied > 0) s.payments.push({ id: uid(), date: d, amount: applied, note: "Mise à jour directe" });
+    } else if (type === "debt") {
+      if (amt > 0) s.debts.push({ id: uid(), date: d, amount: amt, desc: "Dette ajoutée directement" });
+    } else {
+      const diff = remaining(s) - amt;
+      if (diff > 0) s.payments.push({ id: uid(), date: d, amount: diff, note: "Correction du restant" });
+      else if (diff < 0) s.debts.push({ id: uid(), date: d, amount: -diff, desc: "Correction du restant" });
+    }
+    renderAll();
+    return;
+  }
+  if (t.dataset.edit) {
+    const s = S.find(x => x.id === t.dataset.edit);
+    document.getElementById("formTitle").textContent = "Modifier le fournisseur";
+    document.getElementById("fId").value = s.id;
+    document.getElementById("fName").value = s.name;
+    document.getElementById("fNote").value = s.note;
+    document.getElementById("fDue").value = s.dueDay;
+    document.getElementById("fTerms").value = s.terms;
+    document.getElementById("fDebt").value = 0;
+    document.querySelector('.dtab[data-tab="add"]').click();
+  }
+  if (t.dataset.fix) {
+    const s = S.find(x => x.id === t.dataset.fix);
+    document.getElementById("cSup").value = s.id;
+    document.getElementById("cAmt").value = remaining(s);
+    document.querySelector('.dtab[data-tab="add"]').click();
+  }
+  if (t.dataset.del) {
+    const s = S.find(x => x.id === t.dataset.del);
+    if (confirm("Supprimer " + s.name + " et tout son historique ?")) {
+      S = S.filter(x => x.id !== s.id); renderAll();
+    }
+  }
+});
+
+/* Dettes */
+document.getElementById("dSave").addEventListener("click", () => {
+  const s = S.find(x => x.id === document.getElementById("dSup").value);
+  const amount = parseFloat(document.getElementById("dAmt").value);
+  if (!s || !amount || amount <= 0) return alert("Choisis un fournisseur et un montant.");
+  s.debts.push({ id: uid(), date: document.getElementById("dDate").value || today(), amount, desc: document.getElementById("dDesc").value.trim() });
+  document.getElementById("dAmt").value = ""; document.getElementById("dDesc").value = "";
+  renderAll();
+  alert("Dette ajoutée. Restant de " + s.name + " : " + fmt(remaining(s)));
+});
+
+/* Correction du restant (ajuste par une dette ou un paiement d'ajustement) */
+document.getElementById("cSave").addEventListener("click", () => {
+  const s = S.find(x => x.id === document.getElementById("cSup").value);
+  const target = parseFloat(document.getElementById("cAmt").value);
+  if (!s || isNaN(target) || target < 0) return alert("Montant invalide.");
+  const diff = remaining(s) - target;
+  if (diff > 0) s.payments.push({ id: uid(), date: today(), amount: diff, note: "Correction" });
+  else if (diff < 0) s.debts.push({ id: uid(), date: today(), amount: -diff, desc: "Correction" });
+  document.getElementById("cAmt").value = "";
+  renderAll();
+});
+
+/* Paiements */
+document.getElementById("pDate").value = today();
+document.getElementById("dDate").value = today();
+document.getElementById("pSave").addEventListener("click", () => {
+  const s = S.find(x => x.id === document.getElementById("pSup").value);
+  const amount = parseFloat(document.getElementById("pAmt").value);
+  if (!s || !amount || amount <= 0) return alert("Choisis un fournisseur et un montant.");
+  const applied = Math.min(amount, remaining(s));
+  s.payments.push({ id: uid(), date: document.getElementById("pDate").value || today(), amount: applied, note: document.getElementById("pNote").value.trim() });
+  document.getElementById("pAmt").value = ""; document.getElementById("pNote").value = "";
+  renderAll();
+});
+document.getElementById("payList").addEventListener("click", e => {
+  const v = e.target.dataset.delpay; if (!v) return;
+  const [sid, pid] = v.split("|");
+  const s = S.find(x => x.id === sid);
+  if (s && confirm("Supprimer ce paiement ?")) { s.payments = s.payments.filter(p => p.id !== pid); renderAll(); }
+});
+
+/* Sauvegarde */
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const txt = JSON.stringify(S);
+  document.getElementById("ioBox").value = txt;
+  if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
+});
+document.getElementById("importBtn").addEventListener("click", () => {
+  try {
+    const v = JSON.parse(document.getElementById("ioBox").value);
+    if (!Array.isArray(v)) throw new Error();
+    S = v; renderAll(); alert("Restauré.");
+  } catch (e) { alert("Sauvegarde invalide."); }
+});
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (confirm("Remettre les données de départ ? Tout ce qui a été ajouté sera perdu.")) { S = seed(); renderAll(); }
+});
+
+document.getElementById("planMonths").addEventListener("input", renderDash);
+
+S = load();
+renderAll();
+
+window.__debtReload = () => { S = load(); renderAll(); };
+window.__debtMinTotal = () => S.reduce((a, s) => a + requiredMonthly(s), 0);
+})();
+document.querySelectorAll(".topbtn").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".topbtn").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  document.getElementById("view-stock").classList.toggle("hidden", b.dataset.view !== "stock");
+  document.getElementById("view-debts").classList.toggle("hidden", b.dataset.view !== "debts");
+  if (b.dataset.view === "debts" && window.__debtReload) window.__debtReload();
+  if (b.dataset.view === "stock") renderAll();
+}));
+</script>
+</body>
+</html>
