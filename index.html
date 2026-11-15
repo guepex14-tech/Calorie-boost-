@@ -152,40 +152,24 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   </div>
   <div class="card quick">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
-      <h2 style="margin:0">Vente rapide</h2>
+      <h2 style="margin:0">Vente (facture)</h2>
       <span class="label">Aujourd'hui : <strong id="sTodayBig">0 DA</strong></span>
     </div>
-    <div class="field" style="margin-top:10px"><label for="sText">Écris la vente comme un message (ex : سدر 2 كغ 11000 remise 500)</label>
-      <div class="row" style="margin-top:4px"><input type="text" id="sText" placeholder="ex : زيت بدراوي 3 900 remise 50" autocomplete="off"><button class="ghost" id="sParse">Remplir</button></div>
+    <div class="row" style="margin-top:10px">
+      <div class="field"><label for="sCust">Client (facultatif, obligatoire si crédit)</label><input type="text" id="sCust" list="custNames" placeholder="nom du client" autocomplete="off"><datalist id="custNames"></datalist></div>
+      <div class="field"><label for="sPay">Paiement</label><select id="sPay"><option value="cash">Comptant</option><option value="credit">Crédit (client)</option></select></div>
     </div>
-    <div class="field" style="margin-top:10px"><label for="sSearch">Produit (tape 1, 2 ou 3 lettres)</label>
-      <input type="text" id="sSearch" autocomplete="off" placeholder="ex : سدر، زيت، تلبي...">
-      <div id="sSug" class="sug"></div>
-    </div>
+    <div class="field" style="margin-top:10px"><label for="sSearch">Produit (tape 1, 2 ou 3 lettres)</label><input type="text" id="sSearch" autocomplete="off" placeholder="ex : سدر، زيت، تلبي..."><div id="sSug" class="sug"></div></div>
     <div class="row">
-      <div class="field"><label for="sUnitPrice">Prix de vente unitaire (DA)</label><input type="number" id="sUnitPrice" min="0" step="10"></div>
-      <div class="field"><label for="sDiscount">Remise / تخفيض (DA)</label><input type="number" id="sDiscount" min="0" step="10" placeholder="0"></div>
-      <div class="field" style="display:none"><label for="sMode">Je saisis</label>
-        <select id="sMode"><option value="amount">Montant encaissé (DA)</option><option value="qty">Quantité ou poids</option></select></div>
+      <div class="field"><label for="sValue">Montant payé pour ce produit (DA)</label><input type="number" id="sValue" min="0" step="10" inputmode="decimal"></div>
+      <button id="sAddLine">Ajouter</button>
     </div>
-    <div class="row"><div class="field"><label for="sValue">Montant payé par le client (DA)</label><input type="number" id="sValue" min="0" step="0.01" inputmode="decimal"></div></div>
-    <div class="row">
-      <div class="field"><label for="sPay">Mode de paiement</label><select id="sPay"><option value="cash">Comptant</option><option value="credit">Crédit (client)</option></select></div>
-      <div class="field"><label for="sCust">Client (si crédit)</label><input type="text" id="sCust" list="custNames" placeholder="nom du client" autocomplete="off"><datalist id="custNames"></datalist></div>
-    </div>
-    <div class="chips" id="sChips"></div>
+    <div id="cartList" style="margin-top:8px"></div>
+    <div class="row"><div class="field"><label for="sDiscount">Remise sur la facture (DA)</label><input type="number" id="sDiscount" min="0" step="10" placeholder="0"></div></div>
+    <div id="invTotal" style="margin-top:8px"></div>
     <div class="preview" id="sPreview"></div>
-    <div class="label" id="sEst" style="margin-top:6px;line-height:1.7"></div>
-    <div class="row">
-      <input type="text" id="sNote" placeholder="Client / remarque (optionnel)">
-      <button id="sSave">Valider la vente</button>
-      <button class="ghost" id="sCancel">Annuler</button>
-    </div>
+    <div class="row"><input type="text" id="sNote" placeholder="Note (optionnel)"><button id="sSave">Valider la facture</button><button class="ghost" id="sCancel">Annuler</button></div>
   </div>
-
-  
-  <!-- Historique des ventes (juste sous la vente rapide) -->
-
   <div class="card">
     <h2>Historique des ventes</h2>
     <div class="row" style="margin-top:0">
@@ -772,6 +756,9 @@ function cashBalance() {
 }
 
 let sSel = null;
+let cart = [];
+let editingDate = null;
+let viewDay = today();
 const normTxt = s => String(s || "").toLowerCase().trim();
 function sMatches(q) {
   q = normTxt(q);
@@ -788,8 +775,7 @@ function renderSug() {
   const q = document.getElementById("sSearch").value;
   const box = document.getElementById("sSug");
   if (sSel && normTxt(sSel.name) === normTxt(q)) { box.innerHTML = ""; return; }
-  const m = sMatches(q);
-  box.innerHTML = m.map(p => `<div data-pick="${p.id}">${esc(p.name)} <span class="meta">· ${fmt(p.sell)} · stock ${num(p.stock)} ${esc(p.unit)}</span></div>`).join("")
+  box.innerHTML = sMatches(q).map(p => `<div data-pick="${p.id}">${esc(p.name)} <span class="meta">· ${fmt(p.sell)} · stock ${num(p.stock)} ${esc(p.unit)}</span></div>`).join("")
     || (q ? `<div class="meta">Aucun produit trouvé</div>` : "");
 }
 function pickProduct(id) {
@@ -797,106 +783,119 @@ function pickProduct(id) {
   if (!sSel) return;
   document.getElementById("sSearch").value = sSel.name;
   document.getElementById("sSug").innerHTML = "";
-  document.getElementById("sUnitPrice").value = sSel.sell || "";
-  if (pendingSale) { applyPending(); return; }
   document.getElementById("sValue").focus();
-  updatePreview();
 }
-function saleCalc() {
-  const p = sSel;
-  if (!p) return null;
-  const paid = parseFloat(document.getElementById("sValue").value);
-  const disc = parseFloat(document.getElementById("sDiscount").value) || 0;
-  const price = parseFloat(document.getElementById("sUnitPrice").value) || p.sell;
-  if (!paid || paid <= 0 || !price || price <= 0) return null;
-  const qty = r2((paid + disc) / price);
-  const eff = paid / qty;
-  return { p, qty, amount: r2(paid), price, discount: r2(disc), profit: r2(paid - qty * (p.buy || 0)), eff };
+function invoiceTotals() {
+  const subtotal = cart.reduce((a, l) => a + l.amount, 0);
+  const disc = Math.min(Math.max(0, parseFloat(document.getElementById("sDiscount").value) || 0), subtotal);
+  return { subtotal: r2(subtotal), disc: r2(disc), total: r2(subtotal - disc) };
 }
-function updatePreview() {
-  const el = document.getElementById("sPreview");
-  const est = document.getElementById("sEst");
-  if (!sSel) { el.textContent = "Choisis un produit."; el.style.color = "var(--muted)"; est.textContent = ""; return; }
-  const c = saleCalc();
-  if (!c) { el.textContent = "Entre le montant payé par le client."; el.style.color = "var(--muted)"; est.textContent = ""; return; }
-  const after = Math.max(0, r2(c.p.stock - c.qty));
-  const pct = c.p.buy > 0 ? (c.profit / (c.p.buy * c.qty)) * 100 : 0;
-  const warnMargin = c.p.buy > 0 && c.eff < floorPrice(c.p) - 0.005;
-  el.style.color = warnMargin || c.qty > c.p.stock ? "var(--danger)" : "var(--text)";
-  el.textContent = `Quantité : ${num(c.qty)} ${c.p.unit} · payé ${fmt(c.amount)}` + (c.discount ? ` · remise ${fmt(c.discount)}` : "") + ` · stock après : ${num(after)}`;
-  let note = "";
-  if (warnMargin) note = `<div class="out">⚠ Attention : cette vente dépasse la marge minimale de ${minPctOf(c.p)} % (prix réel ${fmt(c.eff)} / ${c.p.unit}, minimum ${fmt(floorPrice(c.p))}).</div>`;
-  if (c.qty > c.p.stock) note += `<div class="out">⚠ Le stock ne suffit pas (il reste ${num(c.p.stock)} ${c.p.unit}).</div>`;
-  est.innerHTML = `<div>Bénéfice de cette vente : <span class="${c.profit >= 0 ? "in" : "out"}">${fmt(c.profit)}</span> (${num(pct)} %)</div>` + note;
+function cartLines() {
+  const t = invoiceTotals();
+  return cart.map(l => {
+    const p = prodById(l.productId) || { sell: 1, buy: 0, unit: "", stock: 0, name: l.name };
+    const share = t.subtotal > 0 ? l.amount / t.subtotal : 0;
+    const net = r2(l.amount - t.disc * share);
+    const qty = r2(l.amount / (p.sell || 1));
+    const discLine = r2(l.amount - net);
+    const eff = qty > 0 ? net / qty : 0;
+    const profit = r2(net - qty * (p.buy || 0));
+    const warn = (p.buy || 0) > 0 && eff < floorPrice(p) - 0.005;
+    return { productId: l.productId, name: l.name, amount: l.amount, p, qty, net, discLine, eff, profit, warn };
+  });
 }
-function resetSale() {
+function renderCart() {
+  const lines = cartLines();
+  document.getElementById("cartList").innerHTML = lines.length ? lines.map((l, i) => `
+    <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(l.name)}</div>
+    <div class="meta">${num(l.qty)} ${esc(l.p.unit || "")} · payé ${fmt(l.amount)}${l.discLine ? " · remise " + fmt(l.discLine) : ""} · bénéfice ${fmt(l.profit)}</div>
+    ${l.warn ? `<div class="out">⚠ sous la marge minimale (${minPctOf(l.p)} %)</div>` : ""}</div>
+    <div style="text-align:right"><div class="qty in">${fmt(l.net)}</div><button class="small danger" data-rm="${i}">×</button></div></div>`).join("")
+    : `<div class="empty">Aucun produit dans la facture</div>`;
+  const t = invoiceTotals();
+  const profit = lines.reduce((a, l) => a + l.profit, 0);
+  document.getElementById("invTotal").innerHTML = lines.length
+    ? `<strong>Total à payer : ${fmt(t.total)}</strong>${t.disc ? ` <span class="meta">(remise ${fmt(t.disc)})</span>` : ""} · <span class="${profit >= 0 ? "in" : "out"}">bénéfice ${fmt(profit)}</span>` : "";
+  const short = lines.filter(l => l.qty > l.p.stock).map(l => l.name);
+  const pv = document.getElementById("sPreview");
+  pv.textContent = short.length ? "⚠ Stock insuffisant : " + short.join(", ") : "";
+  pv.style.color = short.length ? "var(--danger)" : "var(--text)";
+}
+function updatePreview() { renderCart(); }
+function addLine() {
+  if (!sSel) return alert("Choisis un produit.");
+  const amt = parseFloat(document.getElementById("sValue").value);
+  if (!amt || amt <= 0) return alert("Mets le montant payé pour ce produit.");
+  const ex = cart.find(l => l.productId === sSel.id);
+  if (ex) ex.amount = r2(ex.amount + amt);
+  else cart.push({ productId: sSel.id, name: sSel.name, amount: r2(amt) });
   sSel = null;
-  document.getElementById("sPay").value = "cash";
-  document.getElementById("sCust").value = "";
-  editingDate = null;
-  ["sSearch", "sUnitPrice", "sValue", "sNote", "sText", "sDiscount"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("sSearch").value = "";
+  document.getElementById("sValue").value = "";
   document.getElementById("sSug").innerHTML = "";
-  updatePreview();
+  renderCart();
   document.getElementById("sSearch").focus();
 }
-function renderChips() {
-  const amts = [500, 1000, 2000, 3000, 5000];
-  document.getElementById("sChips").innerHTML = amts.map(a => `<button data-amt="${a}">${a}</button>`).join("");
+function resetSale() {
+  sSel = null; cart = [];
+  ["sSearch", "sValue", "sNote", "sDiscount", "sCust"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("sPay").value = "cash";
+  document.getElementById("sSug").innerHTML = "";
+  renderCart();
 }
-document.getElementById("sChips").addEventListener("click", e => {
-  const a = e.target.dataset.amt;
-  if (!a) return;
-  document.getElementById("sMode").value = "amount";
-  document.getElementById("sValue").value = a;
-  updatePreview();
-});
 document.getElementById("sSearch").addEventListener("input", () => {
   if (sSel && normTxt(sSel.name) !== normTxt(document.getElementById("sSearch").value)) sSel = null;
-  renderSug(); updatePreview();
+  renderSug();
 });
 document.getElementById("sSearch").addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    const first = document.querySelector("#sSug [data-pick]");
-    if (first) pickProduct(first.dataset.pick);
-    e.preventDefault();
-  }
+  if (e.key === "Enter") { e.preventDefault(); const first = document.querySelector("#sSug [data-pick]"); if (first) pickProduct(first.dataset.pick); }
 });
 document.getElementById("sSug").addEventListener("click", e => {
   const id = e.target.closest("[data-pick]")?.dataset.pick;
   if (id) pickProduct(id);
 });
-["sUnitPrice", "sMode", "sValue", "sDiscount"].forEach(id => document.getElementById(id).addEventListener("input", updatePreview));
-document.getElementById("sMode").addEventListener("change", updatePreview);
+document.getElementById("sAddLine").addEventListener("click", addLine);
+document.getElementById("sValue").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addLine(); } });
+document.getElementById("sDiscount").addEventListener("input", renderCart);
+document.getElementById("cartList").addEventListener("click", e => {
+  const i = e.target.dataset.rm;
+  if (i !== undefined) { cart.splice(parseInt(i, 10), 1); renderCart(); }
+});
 document.getElementById("sCancel").addEventListener("click", resetSale);
 document.getElementById("sSave").addEventListener("click", () => {
-  const c = saleCalc();
-  if (!c) return alert("Choisis un produit et le montant payé.");
-  const { p, qty, amount, price, discount, profit } = c;
+  if (!cart.length) return alert("Ajoute au moins un produit à la facture.");
   const isCredit = document.getElementById("sPay").value === "credit";
-  if (isCredit && !document.getElementById("sCust").value.trim()) return alert("Mets le nom du client pour une vente à crédit.");
-  const date = editingDate || today();
-  editingDate = null;
+  const custName = document.getElementById("sCust").value.trim();
+  if (isCredit && !custName) return alert("Mets le nom du client pour une vente à crédit.");
+  const lines = cartLines();
+  const date = today();
   const note = document.getElementById("sNote").value.trim();
-  const cust = isCredit ? findOrCreateCustomer(document.getElementById("sCust").value) : null;
-  p.stock = Math.max(0, r2(p.stock - qty));
-  touch(p);
-  const sale = { id: uid(), ts: Date.now(), date, productId: p.id, name: p.name, qty, unit: p.unit, unitPrice: price,
-    amount, discount, profit, note, credit: isCredit, customerId: cust ? cust.id : "" };
-  if (cust) cust.entries.push({ id: uid(), date, amount, type: "sale", saleId: sale.id, desc: "Vente : " + p.name + " (" + qty + " " + p.unit + ")" });
-  D.sales.push(sale);
-  D.moves.push({ id: uid(), productId: p.id, type: "out", qty, date, note: "Vente" + (note ? " · " + note : ""), saleId: sale.id });
-  const warn = p.buy > 0 && (amount / qty) < floorPrice(p) - 0.005;
+  const cust = isCredit ? findOrCreateCustomer(custName) : null;
+  const invId = uid();
+  lines.forEach(l => {
+    const p = l.p;
+    p.stock = Math.max(0, r2(p.stock - l.qty));
+    touch(p);
+    const sale = { id: uid(), ts: Date.now(), date, productId: p.id, name: p.name, qty: l.qty, unit: p.unit,
+      unitPrice: p.sell, amount: l.net, discount: l.discLine, profit: l.profit, note, credit: isCredit,
+      customerId: cust ? cust.id : "", invoiceId: invId };
+    if (cust) cust.entries.push({ id: uid(), date, amount: l.net, type: "sale", saleId: sale.id, desc: "Vente : " + p.name + " (" + l.qty + " " + p.unit + ")" });
+    D.sales.push(sale);
+    D.moves.push({ id: uid(), productId: p.id, type: "out", qty: l.qty, date, note: "Facture" + (note ? " · " + note : ""), saleId: sale.id });
+  });
+  const total = r2(lines.reduce((a, l) => a + l.net, 0));
+  const warnCount = lines.filter(l => l.warn).length;
   resetSale();
   renderAll();
   const msg = document.getElementById("sPreview");
-  msg.style.color = warn ? "var(--warn)" : "var(--accent)";
-  msg.textContent = "✔ Vente enregistrée : " + num(qty) + " " + p.unit + " · " + fmt(amount) + " · bénéfice " + fmt(profit) + (warn ? " (⚠ sous la marge minimale)" : "");
+  msg.style.color = warnCount ? "var(--warn)" : "var(--accent)";
+  msg.textContent = "✔ Facture enregistrée : " + fmt(total) + " (" + lines.length + " produit(s))" + (warnCount ? " · ⚠ " + warnCount + " produit(s) sous la marge" : "");
 });
 function undoSale(id) {
   const s = D.sales.find(x => x.id === id);
   if (!s) return;
   const p = prodById(s.productId);
-  if (p) { p.stock = r2(p.stock + s.qty); }
+  if (p) p.stock = r2(p.stock + s.qty);
   D.sales = D.sales.filter(x => x.id !== id);
   D.moves = D.moves.filter(m => m.saleId !== id);
   (D.customers || []).forEach(c => { c.entries = c.entries.filter(e => e.saleId !== id); });
@@ -904,20 +903,20 @@ function undoSale(id) {
 }
 document.getElementById("sList").addEventListener("click", e => {
   const t = e.target;
-  if (t.dataset.sdel && confirm("Supprimer cette vente ? Le stock sera remis.")) undoSale(t.dataset.sdel);
+  if (t.dataset.sdel) {
+    if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "Confirmer ?"; return; }
+    undoSale(t.dataset.sdel);
+    return;
+  }
   if (t.dataset.sedit) {
     const s = D.sales.find(x => x.id === t.dataset.sedit);
     if (!s) return;
-    editingDate = s.date;
+    const listAmount = r2(s.amount + (s.discount || 0));
     undoSale(s.id);
-    pickProduct(s.productId);
-    const pp = prodById(s.productId);
-    document.getElementById("sUnitPrice").value = pp ? pp.sell : (s.unitPrice || (s.amount / s.qty));
-    document.getElementById("sDiscount").value = s.discount || 0;
-    document.getElementById("sMode").value = "amount";
-    document.getElementById("sValue").value = s.amount;
-    document.getElementById("sNote").value = s.note || "";
-    updatePreview();
+    const ex = cart.find(l => l.productId === s.productId);
+    if (ex) ex.amount = r2(ex.amount + listAmount);
+    else cart.push({ productId: s.productId, name: s.name, amount: listAmount });
+    renderCart();
     document.querySelector('.tab[data-tab="dash"]').click();
     window.scrollTo(0, 0);
   }
@@ -990,70 +989,6 @@ document.getElementById("mSaveCfg").addEventListener("click", () => {
   renderAll();
 });
 
-/* ===== Saisie en texte libre ===== */
-let pendingSale = null;
-let editingDate = null;
-let viewDay = today();
-const STOP = new Set(["بـ","ب","ثمن","سعر","بسعر","بثمن","و","لتر","ليتر","l","ل","كغ","كلغ","كيلو","kg","g","غ","غرام","جرام","قطعة","قطع","حبة","حبات","remise","remize","ريمز","ريميز","ريمزي","تخفيض","خصم","rem","de","a","à","dh","da","دج","دينار"]);
-const WEIGHT_G = new Set(["g","غ","غرام","جرام"]);
-function parseSale(raw) {
-  let t = String(raw || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[,،]/g, ".").toLowerCase();
-  let remise = 0;
-  const rm = t.match(/(remise|remize|ريمز|ريميز|ريمزي|تخفيض|خصم|rem)\s*(\d+(?:\.\d+)?)/);
-  if (rm) { remise = parseFloat(rm[2]); t = t.replace(rm[0], " "); }
-  const nums = [];
-  t = t.replace(/(\d+(?:\.\d+)?)\s*(كيلوغرام|كيلو|كلغ|كغ|kg|غرام|جرام|غ|g|قطعة|قطع|حبة|حبات)?/g, (m, v, u) => {
-    nums.push({ v: parseFloat(v), u: u || "" }); return " ";
-  });
-  const tokens = t.split(/[\s،,.;:()\-]+/).filter(w => w.length > 1 && !STOP.has(w));
-  return { remise, nums, tokens };
-}
-function applyPending() {
-  const pd = pendingSale;
-  pendingSale = null;
-  const p = sSel;
-  if (!p) return;
-  const remise = pd.remise || 0;
-  const total = pd.price != null ? pd.price : (pd.qty ? p.sell * pd.qty : null);
-  document.getElementById("sSug").innerHTML = "";
-  if (total == null) { updatePreview(); return; }
-  document.getElementById("sMode").value = "amount";
-  document.getElementById("sValue").value = r2(total - remise);
-  document.getElementById("sDiscount").value = remise || "";
-  document.getElementById("sUnitPrice").value = p.sell || "";
-  updatePreview();
-}
-function fillFromText() {
-  const raw = document.getElementById("sText").value;
-  if (!raw.trim()) return;
-  const pr = parseSale(raw);
-  let qtyN = null, priceN = null;
-  if (pr.nums.length >= 2) { qtyN = pr.nums[0]; priceN = pr.nums[pr.nums.length - 1]; }
-  else if (pr.nums.length === 1) { if (pr.nums[0].u) qtyN = pr.nums[0]; else priceN = pr.nums[0]; }
-  let qty = null;
-  if (qtyN) qty = WEIGHT_G.has(qtyN.u) ? qtyN.v / 1000 : qtyN.v;
-  const price = priceN ? priceN.v : null;
-  pendingSale = { qty, price, remise: pr.remise };
-  const q = pr.tokens;
-  let matches = q.length ? D.products.filter(p => q.every(tk => normTxt(p.name).includes(tk))) : [];
-  if (!matches.length && q.length) {
-    matches = D.products
-      .map(p => ({ p, c: q.filter(tk => normTxt(p.name).includes(tk)).length }))
-      .filter(x => x.c > 0).sort((a, b) => b.c - a.c).slice(0, 8).map(x => x.p);
-  }
-  if (matches.length === 1) { pickProduct(matches[0].id); return; }
-  sSel = null;
-  document.getElementById("sSearch").value = q.join(" ");
-  document.getElementById("sSug").innerHTML = matches.map(p => `<div data-pick="${p.id}">${esc(p.name)} <span class="meta">· ${fmt(p.sell)} · stock ${num(p.stock)} ${esc(p.unit)}</span></div>`).join("")
-    || `<div class="meta">Aucun produit trouvé, écris le nom autrement.</div>`;
-  const el = document.getElementById("sPreview");
-  el.style.color = "var(--muted)";
-  el.textContent = matches.length ? "Choisis le produit dans la liste, les autres valeurs sont déjà remplies." : "";
-}
-document.getElementById("sParse").addEventListener("click", fillFromText);
-document.getElementById("sText").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); fillFromText(); } });
-
-renderChips();
 function renderCash() {
   const c = cashBalance();
   document.getElementById("cBal").textContent = fmt(c.balance);
