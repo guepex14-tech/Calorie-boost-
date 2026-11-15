@@ -1712,6 +1712,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
+  el.textContent += " · version 15/11/2026 (ajustement de caisse)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
