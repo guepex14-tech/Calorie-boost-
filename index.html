@@ -233,6 +233,21 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 
 <section id="tab-mov" class="hidden">
   <div class="card">
+    <h2>Transfert vrac → pots (par type de miel)</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="cdBulk">Miel en vrac</label><select id="cdBulk"></select></div></div>
+    <table style="width:100%;font-size:14px;margin-top:8px;border-collapse:collapse">
+      <tr style="font-weight:700"><td>Format</td><td>Nombre de pots</td><td>Emballage (DA)</td><td>Prix de vente (DA)</td></tr>
+      <tr><td>125 g</td><td><input type="number" id="cn125" min="0" step="1"></td><td><input type="number" id="pk125" step="1"></td><td><input type="number" id="sl125" step="10"></td></tr>
+      <tr><td>250 g</td><td><input type="number" id="cn250" min="0" step="1"></td><td><input type="number" id="pk250" step="1"></td><td><input type="number" id="sl250" step="10"></td></tr>
+      <tr><td>500 g</td><td><input type="number" id="cn500" min="0" step="1"></td><td><input type="number" id="pk500" step="1"></td><td><input type="number" id="sl500" step="10"></td></tr>
+      <tr><td>1 kg</td><td><input type="number" id="cn1000" min="0" step="1"></td><td><input type="number" id="pk1000" step="1"></td><td><input type="number" id="sl1000" step="10"></td></tr>
+    </table>
+    <div class="preview" id="cdPrev" style="margin-top:8px"></div>
+    <div class="row"><button id="cdGo">Transférer au stock des pots</button></div>
+    <div class="label" style="margin-top:6px">Le miel en vrac diminue selon les kg utilisés. Les pots entrent au stock avec leur coût (miel + emballage) et leur prix de vente.</div>
+  </div>
+
+  <div class="card">
     <h2>Nouveau mouvement</h2>
     <div class="row" style="margin-top:0">
       <div class="field"><label for="mType">Type</label>
@@ -547,6 +562,7 @@ function renderProducts() {
   const opts = D.products.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
   document.getElementById("mProd").innerHTML = opts;
   document.getElementById("bProd").innerHTML = opts;
+  document.getElementById("cdBulk").innerHTML = D.products.filter(p => p.unit === "kg").map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
 }
 
 function renderMoves() {
@@ -1883,6 +1899,73 @@ document.getElementById("anaCheck").addEventListener("click", () => {
 });
 document.getElementById("anaMonth").value = today().slice(0, 7);
 document.getElementById("anaMonth").addEventListener("change", renderAnalysis);
+
+/* ===== Transfert vrac → pots (plusieurs formats à la fois) ===== */
+const POT_SIZES = [125, 250, 500, 1000];
+const PACK_COST = { 125: 45, 250: 50, 500: 60, 1000: 100 };
+function potName(bulk, size) { return size == 1000 ? bulk.name + " 1 كغ" : bulk.name + " " + size + " غ"; }
+function potInputs(size) {
+  return {
+    n: parseInt(document.getElementById("cn" + size).value, 10) || 0,
+    pack: parseFloat(document.getElementById("pk" + size).value) || 0,
+    sell: parseFloat(document.getElementById("sl" + size).value) || 0
+  };
+}
+function potPlan() {
+  const bulk = prodById(document.getElementById("cdBulk").value);
+  if (!bulk) return null;
+  const lines = POT_SIZES.map(size => {
+    const x = potInputs(size);
+    const kg = r2(x.n * size / 1000);
+    const honey = r2(size / 1000 * (bulk.buy || 0));
+    return { size, ...x, kg, honey, cost: r2(honey + x.pack) };
+  }).filter(l => l.n > 0);
+  const totalKg = r2(lines.reduce((a, l) => a + l.kg, 0));
+  return { bulk, lines, totalKg, short: totalKg > bulk.stock };
+}
+function potPreview() {
+  const el = document.getElementById("cdPrev");
+  const plan = potPlan();
+  if (!plan) { el.textContent = ""; return; }
+  if (!plan.lines.length) { el.textContent = "Mets le nombre de pots pour au moins un format."; el.style.color = "var(--muted)"; return; }
+  el.style.color = plan.short ? "var(--danger)" : "var(--text)";
+  el.innerHTML = plan.lines.map(l => `${l.n} × ${l.size == 1000 ? "1 kg" : l.size + " g"} · ${num(l.kg)} kg · coût du pot ${fmt(l.cost)}${l.sell ? " · vente " + fmt(l.sell) : ""}`).join("<br>") +
+    `<br><strong>Total miel utilisé : ${num(plan.totalKg)} kg</strong> · vrac après : ${num(r2(plan.bulk.stock - plan.totalKg))} kg` +
+    (plan.short ? `<br>⚠ Stock vrac insuffisant (il reste ${num(plan.bulk.stock)} kg)` : "");
+}
+POT_SIZES.forEach(size => {
+  document.getElementById("pk" + size).value = PACK_COST[size];
+  ["cn" + size, "pk" + size, "sl" + size].forEach(id => document.getElementById(id).addEventListener("input", potPreview));
+});
+document.getElementById("cdBulk").addEventListener("change", potPreview);
+document.getElementById("cdGo").addEventListener("click", () => {
+  const plan = potPlan();
+  if (!plan || !plan.lines.length) return alert("Mets le nombre de pots pour au moins un format.");
+  if (plan.short) return alert("Stock vrac insuffisant : il reste " + num(plan.bulk.stock) + " kg.");
+  const bulk = plan.bulk;
+  const date = today();
+  plan.lines.forEach(l => {
+    const name = potName(bulk, l.size);
+    let jar = D.products.find(p => normTxt(p.name) === normTxt(name));
+    if (!jar) {
+      jar = { id: uid(), name, unit: "unité", stock: 0, min: 2, buy: 0, sell: 0, minPct: bulk.minPct == null ? null : bulk.minPct };
+      D.products.push(jar);
+    }
+    const old = jar.stock;
+    jar.buy = r2((old * (jar.buy || 0) + l.n * l.cost) / (old + l.n));
+    jar.stock = old + l.n;
+    if (l.sell) jar.sell = l.sell;
+    touch(jar);
+    D.moves.push({ id: uid(), productId: jar.id, type: "in", qty: l.n, date, note: "Transfert depuis " + bulk.name });
+  });
+  bulk.stock = r2(bulk.stock - plan.totalKg);
+  touch(bulk);
+  D.moves.push({ id: uid(), productId: bulk.id, type: "out", qty: plan.totalKg, date, note: "Transfert en pots" });
+  POT_SIZES.forEach(size => { document.getElementById("cn" + size).value = ""; document.getElementById("sl" + size).value = ""; });
+  renderAll();
+  potPreview();
+  alert("Transfert effectué : " + plan.lines.length + " format(s), " + num(plan.totalKg) + " kg utilisés.");
+});
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
