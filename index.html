@@ -140,6 +140,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <button class="tab" data-tab="cash">Caisse</button>
   <button class="tab" data-tab="cli">Clients</button>
   <button class="tab" data-tab="sit">Situation</button>
+  <button class="tab" data-tab="ana">تحليل</button>
   <button class="tab" data-tab="sync">Synchro</button>
   <button class="tab" data-tab="data">Sauvegarde</button>
 </div>
@@ -203,12 +204,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 </section>
 
 <section id="tab-prod" class="hidden">
-  <div class="card">
-    <h2>Marge par défaut</h2>
-    <div class="label" style="margin-bottom:8px">Chaque produit a sa propre marge minimale (dans sa fiche). Cette valeur s'applique seulement aux produits qui n'ont pas de marge définie. Si la remise fait descendre le prix sous la marge du produit, le programme affiche un avertissement.</div>
-    <div class="row" style="margin-top:0"><div class="field"><label for="mMin">Marge minimale par défaut (%)</label><input type="number" id="mMin" min="0" step="1"></div></div>
-    <div class="row"><button id="mSaveCfg">Enregistrer</button></div>
-  </div>
+  
   <div class="card">
     <h2 id="pTitle">Ajouter un produit</h2>
     <input type="hidden" id="pId">
@@ -225,7 +221,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <div class="field"><label for="pBuy">Prix d'achat (DA)</label><input type="number" id="pBuy" min="0" step="10" value="0"></div>
       <div class="field"><label for="pSell">Prix de vente (DA)</label><input type="number" id="pSell" min="0" step="10" value="0"></div>
     </div>
-    <div class="row"><div class="field"><label for="pMinPct">Marge minimale de ce produit (%) : vide = la marge par défaut</label><input type="number" id="pMinPct" min="0" step="1"></div></div>
+    <div class="row"><div class="field"><label for="pMinPct">Marge minimale de ce produit (%) : obligatoire</label><input type="number" id="pMinPct" min="0" step="1"></div></div>
     <div class="card" style="padding:10px;margin:0 0 10px">
       <div id="pHint" class="label"></div>
       <div class="row" style="margin-top:6px"><button class="small" id="pUseSug">Utiliser le prix minimum</button></div>
@@ -328,6 +324,25 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="label" id="cBalTxt" style="margin-top:8px"></div>
     <div id="cHist" style="margin-top:8px"></div>
   </div>
+</section>
+<section id="tab-ana" class="hidden">
+  <div class="card"><h2>Clôture de caisse du jour</h2>
+    <div id="anaClose" class="label"></div>
+    <div class="row"><div class="field"><label for="anaReal">Montant réel compté en caisse (DA)</label><input type="number" id="anaReal" step="10"></div><button id="anaCheck">Comparer</button></div>
+    <div id="anaCloseRes" style="margin-top:6px"></div>
+  </div>
+  <div class="card"><h2>Résultat du mois</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="anaMonth">Mois</label><input type="month" id="anaMonth"></div></div>
+    <div id="anaPnl" style="margin-top:8px"></div>
+  </div>
+  <div class="card"><h2>Ce mois contre le mois précédent</h2><div id="anaCmp"></div></div>
+  <div class="card"><h2>Prévision de caisse (30 jours)</h2><div id="anaForecast"></div></div>
+  <div class="card"><h2>Échéances fournisseurs</h2><div id="anaDue"></div></div>
+  <div class="card"><h2>Ventes des 14 derniers jours</h2><div id="anaChart"></div></div>
+  <div class="card"><h2>Produits les plus rentables (30 jours)</h2><div id="anaTop"></div></div>
+  <div class="card"><h2>Stock qui dort (sans vente depuis 30 jours)</h2><div id="anaSleep"></div></div>
+  <div class="card"><h2>Clients avec dettes anciennes (plus de 30 jours)</h2><div id="anaCust"></div></div>
+  <div class="card"><h2>Qualité des données</h2><div id="anaQuality"></div></div>
 </section>
 <section id="tab-sync" class="hidden">
   <div class="card">
@@ -545,12 +560,12 @@ function renderMoves() {
   }).join("") || `<div class="empty">Aucun mouvement</div>`;
 }
 
-function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); save(); }
+function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); save(); }
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
   t.classList.add("on");
-  ["dash", "prod", "mov", "buy", "cash", "cli", "sit", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
+  ["dash", "prod", "mov", "buy", "cash", "cli", "sit", "ana", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
 }));
 
 function resetProdForm() {
@@ -575,6 +590,7 @@ document.getElementById("pSave").addEventListener("click", () => {
     sell: parseFloat(document.getElementById("pSell").value) || 0,
     minPct: document.getElementById("pMinPct").value === "" ? null : parseFloat(document.getElementById("pMinPct").value)
   };
+  if (data.minPct == null) return alert("Mets la marge minimale de ce produit (%).");
   if (data.sell > 0 && data.buy > 0 && data.sell < floorPrice({ buy: data.buy, minPct: data.minPct }) - 0.005)
     return alert("Prix de vente sous la marge minimale de ce produit : minimum " + fmt(floorPrice({ buy: data.buy, minPct: data.minPct })) + ".");
   const id = document.getElementById("pId").value;
@@ -809,7 +825,7 @@ function renderCart() {
   document.getElementById("cartList").innerHTML = lines.length ? lines.map((l, i) => `
     <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(l.name)}</div>
     <div class="meta">${num(l.qty)} ${esc(l.p.unit || "")} · payé ${fmt(l.amount)}${l.discLine ? " · remise " + fmt(l.discLine) : ""} · bénéfice ${fmt(l.profit)}</div>
-    ${l.warn ? `<div class="out">⚠ sous la marge minimale (${minPctOf(l.p)} %)</div>` : ""}</div>
+    ${l.warn ? `<div class="out">⚠ sous la marge minimale (${pctTxt(l.p)})</div>` : ""}${minPctOf(l.p) == null ? `<div class="out">⚠ marge non définie pour ce produit</div>` : ""}</div>
     <div style="text-align:right"><div class="qty in">${fmt(l.net)}</div><button class="small danger" data-rm="${i}">×</button></div></div>`).join("")
     : `<div class="empty">Aucun produit dans la facture</div>`;
   const t = invoiceTotals();
@@ -973,21 +989,10 @@ document.getElementById("hDays").addEventListener("click", e => {
   if (d) { viewDay = d; renderSales(); window.scrollTo(0, 0); }
 });
 
-/* ===== Marge minimale (par produit) ===== */
-function margins() {
-  try { const v = JSON.parse(localStorage.getItem("calorie-boost-margins")) || {}; return { min: Number(v.min ?? 25) }; }
-  catch (e) { return { min: 25 }; }
-}
-function minPctOf(p) { return p && p.minPct != null && p.minPct !== "" ? Number(p.minPct) : margins().min; }
-function floorPrice(p) { return (p.buy || 0) * (1 + minPctOf(p) / 100); }
-document.getElementById("mMin").value = margins().min;
-document.getElementById("mSaveCfg").addEventListener("click", () => {
-  const min = parseFloat(document.getElementById("mMin").value);
-  if (isNaN(min) || min < 0) return alert("Mets un nombre valide.");
-  localStorage.setItem("calorie-boost-margins", JSON.stringify({ min }));
-  alert("Marge par défaut enregistrée : " + min + " %.");
-  renderAll();
-});
+/* ===== Marge minimale : définie pour chaque produit (pas de marge par défaut) ===== */
+function minPctOf(p) { return p && p.minPct != null && p.minPct !== "" ? Number(p.minPct) : null; }
+function pctTxt(p) { const m = minPctOf(p); return m == null ? "non définie" : m + " %"; }
+function floorPrice(p) { const m = minPctOf(p); return m == null ? 0 : (p.buy || 0) * (1 + m / 100); }
 
 function renderCash() {
   const c = cashBalance();
@@ -1541,22 +1546,23 @@ document.getElementById("xlsxFile").addEventListener("change", importXlsx);
 
 /* ===== Prix minimum par produit ===== */
 function suggestFloor(buy, minPct) {
-  const m = minPct === "" || minPct == null ? margins().min : Number(minPct);
-  return Math.ceil((buy || 0) * (1 + m / 100) / 10) * 10;
+  if (minPct === "" || minPct == null) return 0;
+  return Math.ceil((buy || 0) * (1 + Number(minPct) / 100) / 10) * 10;
 }
 function sellStatus(p) {
   if (!(p.buy > 0)) return { cls: "", txt: "Prix d'achat manquant." };
   const f = suggestFloor(p.buy, p.minPct);
-  if (!(p.sell > 0)) return { cls: "out", txt: "⚠ Prix de vente non fixé. Minimum : " + fmt(f) + " (" + minPctOf(p) + " %)." };
-  if (p.sell < floorPrice(p) - 0.005) return { cls: "out", txt: "✖ Sous la marge minimale (" + minPctOf(p) + " %) : vendre au minimum " + fmt(f) + "." };
-  return { cls: "in", txt: "✔ Marge conforme (min " + minPctOf(p) + " %) · prix minimum " + fmt(f) };
+  if (!(p.sell > 0)) return { cls: "out", txt: "⚠ Prix de vente non fixé. Minimum : " + fmt(f) + " (" + pctTxt(p) + ")." };
+  if (p.sell < floorPrice(p) - 0.005) return { cls: "out", txt: "✖ Sous la marge minimale (" + pctTxt(p) + ") : vendre au minimum " + fmt(f) + "." };
+  return { cls: "in", txt: "✔ Marge conforme (min " + pctTxt(p) + ") · prix minimum " + fmt(f) };
 }
 function updateProdHint() {
   const buy = parseFloat(document.getElementById("pBuy").value) || 0;
   const mp = document.getElementById("pMinPct").value;
   const el = document.getElementById("pHint");
   if (!buy) { el.textContent = "Entre le prix d'achat pour voir le prix minimum."; return; }
-  const m = mp === "" || mp == null ? margins().min : Number(mp);
+  if (mp === "" || mp == null) { el.innerHTML = "<div class=\"out\">⚠ Mets la marge minimale de ce produit (%).</div>"; return; }
+  const m = Number(mp);
   const sell = parseFloat(document.getElementById("pSell").value) || 0;
   const st = sell <= 0 ? "⚠ Prix de vente non fixé." : sell < buy * (1 + m / 100) - 0.005 ? "✖ Sous la marge minimale." : "✔ Prix conforme.";
   el.innerHTML = `<div><strong>Prix minimum (marge ${m} %) : ${fmt(suggestFloor(buy, mp))}</strong></div><div>${st}</div>`;
@@ -1746,6 +1752,137 @@ function productsForList() {
   return list;
 }
 document.getElementById("pListSearch").addEventListener("input", renderProducts);
+
+/* ===== Analyse et suivi ===== */
+const pad2 = n => String(n).padStart(2, "0");
+const dstr = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+function addDaysStr(s, n) { const d = new Date(s + "T00:00:00"); d.setDate(d.getDate() + n); return dstr(d); }
+function monthEnd(m) { const [y, mo] = m.split("-").map(Number); return dstr(new Date(y, mo, 0)); }
+function prevMonth(m) { const [y, mo] = m.split("-").map(Number); const d = new Date(y, mo - 2, 1); return d.getFullYear() + "-" + pad2(d.getMonth() + 1); }
+function salesBetween(a, b) { return D.sales.filter(s => s.date >= a && s.date <= b); }
+function expensesBetween(a, b) { return D.expenses.filter(e => e.date >= a && e.date <= b).reduce((x, e) => x + e.amount, 0); }
+function debtOwed(s) { return Math.max(0, s.debts.reduce((a, d) => a + d.amount, 0) - s.payments.reduce((a, p) => a + p.amount, 0)); }
+function debtMinOf(s) {
+  const rem = debtOwed(s);
+  if (rem <= 0) return 0;
+  if (s.fixed) return Math.min(s.fixed, rem);
+  const pct = s.pct ? s.pct : (rem > 300000 ? 5 : rem >= 50000 ? 10 : 70);
+  const amt = Math.ceil(rem * pct / 100);
+  return s.cap ? Math.min(amt, s.cap) : amt;
+}
+function nextDueDate(s) {
+  const now = new Date(); const day = s.dueDay || 10;
+  let d = new Date(now.getFullYear(), now.getMonth(), day);
+  if (now.getDate() > day) d = new Date(now.getFullYear(), now.getMonth() + 1, day);
+  return dstr(d);
+}
+function renderAnalysis() {
+  if (!document.getElementById("anaMonth")) return;
+  const t = today();
+  const m = document.getElementById("anaMonth").value || t.slice(0, 7);
+  // Clôture du jour
+  const todays = D.sales.filter(s => s.date === t);
+  const cashToday = todays.filter(s => !s.credit).reduce((a, s) => a + s.amount, 0);
+  const expToday = expensesBetween(t, t);
+  const expectedCash = r2(cashToday - expToday);
+  document.getElementById("anaClose").innerHTML = `Ventes payées en espèces aujourd'hui : <strong>${fmt(cashToday)}</strong> · dépenses : ${fmt(expToday)} · <strong>caisse attendue : ${fmt(expectedCash)}</strong>`;
+  // Résultat du mois
+  const sales = salesBetween(m + "-01", monthEnd(m));
+  const revenue = sales.reduce((a, s) => a + s.amount, 0);
+  const gross = sales.reduce((a, s) => a + saleProfit(s), 0);
+  const cost = revenue - gross;
+  const exp = expensesBetween(m + "-01", monthEnd(m));
+  const net = gross - exp;
+  document.getElementById("anaPnl").innerHTML = `
+    <table style="width:100%;font-size:15px;border-collapse:collapse">
+      <tr><td style="padding:4px 0">Chiffre d'affaires</td><td style="text-align:right">${fmt(revenue)}</td></tr>
+      <tr><td style="padding:4px 0">Coût de la marchandise vendue</td><td style="text-align:right" class="out">−${fmt(cost)}</td></tr>
+      <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">Bénéfice brut</td><td style="text-align:right">${fmt(gross)}</td></tr>
+      <tr><td style="padding:4px 0">Dépenses</td><td style="text-align:right" class="out">−${fmt(exp)}</td></tr>
+      <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">Bénéfice net</td><td style="text-align:right" class="${net >= 0 ? "in" : "out"}">${fmt(net)}</td></tr>
+    </table>
+    <div class="label" style="margin-top:6px">${sales.length} vente(s) ce mois. ${exp === 0 ? "⚠ Aucune dépense enregistrée ce mois : le bénéfice net est probablement surestimé." : ""}</div>`;
+  // Comparaison
+  const pm = prevMonth(m);
+  const psales = salesBetween(pm + "-01", monthEnd(pm));
+  const prevRev = psales.reduce((a, s) => a + s.amount, 0);
+  const prevGross = psales.reduce((a, s) => a + saleProfit(s), 0);
+  const prevNet = prevGross - expensesBetween(pm + "-01", monthEnd(pm));
+  const pct = (a, b) => b ? Math.round((a - b) / Math.abs(b) * 100) + " %" : "—";
+  document.getElementById("anaCmp").innerHTML = `
+    <table style="width:100%;font-size:15px;border-collapse:collapse">
+      <tr style="font-weight:700"><td></td><td style="text-align:right">${pm}</td><td style="text-align:right">${m}</td><td style="text-align:right">évolution</td></tr>
+      <tr><td style="padding:4px 0">Chiffre d'affaires</td><td style="text-align:right">${fmt(prevRev)}</td><td style="text-align:right">${fmt(revenue)}</td><td style="text-align:right">${pct(revenue, prevRev)}</td></tr>
+      <tr><td style="padding:4px 0">Bénéfice net</td><td style="text-align:right">${fmt(prevNet)}</td><td style="text-align:right">${fmt(net)}</td><td style="text-align:right">${pct(net, prevNet)}</td></tr>
+    </table>`;
+  // Prévision de caisse
+  const from30 = addDaysStr(t, -29);
+  const last30 = salesBetween(from30, t);
+  const cashAvg = last30.filter(s => !s.credit).reduce((a, s) => a + s.amount, 0) / 30;
+  const expAvg = expensesBetween(from30, t) / 30;
+  const supplierMonthly = debtList().reduce((a, s) => a + debtMinOf(s), 0);
+  const cash = cashBalance().balance;
+  const forecast = Math.round(cash + cashAvg * 30 - expAvg * 30 - supplierMonthly);
+  document.getElementById("anaForecast").innerHTML = `
+    <div>Caisse actuelle : <strong>${fmt(cash)}</strong></div>
+    <div>Entrées espèces (moyenne 30 j) : ${fmt(cashAvg * 30)} · dépenses (moyenne 30 j) : −${fmt(expAvg * 30)}</div>
+    <div>Minimum fournisseurs à payer sur 30 j : −${fmt(supplierMonthly)}</div>
+    <div style="margin-top:6px">Caisse prévue dans 30 jours : <strong class="${forecast >= 0 ? "in" : "out"}">${fmt(forecast)}</strong></div>
+    <div class="label">Estimation basée sur les 30 derniers jours. ${forecast < 0 ? "⚠ La caisse risque de ne pas suffire." : ""}</div>`;
+  // Échéances fournisseurs
+  const dues = debtList().filter(s => debtOwed(s) > 0).map(s => ({ s, due: nextDueDate(s), min: debtMinOf(s) }))
+    .sort((a, b) => a.due.localeCompare(b.due));
+  document.getElementById("anaDue").innerHTML = dues.length ? dues.map(x => {
+    const days = Math.round((new Date(x.due + "T00:00:00") - new Date(t + "T00:00:00")) / 86400000);
+    return `<div class="item" style="padding:6px 0"><div><div class="name">${esc(x.s.name)}</div><div class="meta">échéance ${x.due} (${days === 0 ? "aujourd'hui" : "dans " + days + " j"}) · reste ${fmt(debtOwed(x.s))}</div></div><div class="qty out">${fmt(x.min)}</div></div>`;
+  }).join("") : `<div class="empty">Aucune dette</div>`;
+  // Graphique 14 jours
+  const days14 = []; for (let k = 13; k >= 0; k--) days14.push(addDaysStr(t, -k));
+  const vals = days14.map(d => D.sales.filter(s => s.date === d).reduce((a, s) => a + s.amount, 0));
+  const mx = Math.max(1, ...vals);
+  document.getElementById("anaChart").innerHTML = days14.map((d, i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13px"><span style="width:70px" class="meta">${d.slice(5)}</span>
+    <div style="flex:1;background:var(--border);border-radius:4px;height:12px"><div style="height:12px;border-radius:4px;background:var(--accent);width:${Math.round(vals[i] / mx * 100)}%"></div></div>
+    <span style="width:80px;text-align:right">${fmt(vals[i])}</span></div>`).join("");
+  // Produits rentables (30 jours)
+  const agg = {};
+  last30.forEach(s => { const k = s.productId; agg[k] = agg[k] || { name: s.name, qty: 0, profit: 0 }; agg[k].qty += s.qty; agg[k].profit += saleProfit(s); });
+  const top = Object.values(agg).sort((a, b) => b.profit - a.profit).slice(0, 8);
+  document.getElementById("anaTop").innerHTML = top.length ? top.map(x => `<div class="item" style="padding:6px 0"><div class="name">${esc(x.name)}</div><div class="qty in">${fmt(x.profit)}</div></div>`).join("") : `<div class="empty">Pas de ventes sur 30 jours</div>`;
+  // Stock qui dort
+  const soldRecent = new Set(last30.map(s => s.productId));
+  const sleeping = D.products.filter(p => p.stock > 0 && !soldRecent.has(p.id)).sort((a, b) => b.stock * b.buy - a.stock * a.buy).slice(0, 10);
+  document.getElementById("anaSleep").innerHTML = sleeping.length ? sleeping.map(p => `<div class="item" style="padding:6px 0"><div class="name">${esc(p.name)}</div><div class="meta">${num(p.stock)} ${esc(p.unit)} · valeur ${fmt(p.stock * p.buy)}</div></div>`).join("") : `<div class="empty">Rien qui dort</div>`;
+  // Clients avec dettes anciennes
+  const old = (D.customers || []).filter(c => custBalance(c) > 0).map(c => {
+    const first = c.entries.filter(e => e.type !== "payment").map(e => e.date).sort()[0] || t;
+    return { c, first, days: Math.round((new Date(t + "T00:00:00") - new Date(first + "T00:00:00")) / 86400000) };
+  }).filter(x => x.days > 30).sort((a, b) => b.days - a.days);
+  document.getElementById("anaCust").innerHTML = old.length ? old.map(x => `<div class="item" style="padding:6px 0"><div><div class="name">${esc(x.c.name)}</div><div class="meta">dette depuis ${x.days} jours</div></div><div class="qty out">${fmt(custBalance(x.c))}</div></div>`).join("") : `<div class="empty">Aucune dette ancienne</div>`;
+  // Qualité des données
+  const noMargin = D.products.filter(p => minPctOf(p) == null).length;
+  const noPrice = D.products.filter(p => !(p.buy > 0) || !(p.sell > 0)).length;
+  const seen = {}; let dupes = 0;
+  D.sales.forEach(s => { const k = [s.date, s.productId, s.qty, s.amount].join("|"); if (seen[k]) dupes++; else seen[k] = 1; });
+  const issues = [];
+  if (noMargin) issues.push(`${noMargin} produit(s) sans marge minimale`);
+  if (noPrice) issues.push(`${noPrice} produit(s) sans prix d'achat ou de vente complet`);
+  if (dupes) issues.push(`${dupes} vente(s) possiblement en double (même date, produit, quantité et montant)`);
+  if (!exp) issues.push("aucune dépense enregistrée ce mois");
+  document.getElementById("anaQuality").innerHTML = issues.length ? issues.map(x => `<div class="out" style="padding:3px 0">⚠ ${esc(x)}</div>`).join("") : `<div class="in">✔ Aucun problème détecté</div>`;
+}
+document.getElementById("anaCheck").addEventListener("click", () => {
+  const real = parseFloat(document.getElementById("anaReal").value);
+  if (isNaN(real)) return alert("Mets le montant réel compté.");
+  const t = today();
+  const expected = r2(D.sales.filter(s => s.date === t && !s.credit).reduce((a, s) => a + s.amount, 0) - expensesBetween(t, t));
+  const diff = r2(real - expected);
+  document.getElementById("anaCloseRes").innerHTML = diff === 0
+    ? `<span class="in">✔ La caisse correspond exactement.</span>`
+    : `<span class="${diff > 0 ? "in" : "out"}">${diff > 0 ? "Excédent" : "Manque"} de ${fmt(Math.abs(diff))}</span> : vérifie les ventes et les dépenses de la journée.`;
+});
+document.getElementById("anaMonth").value = today().slice(0, 7);
+document.getElementById("anaMonth").addEventListener("change", renderAnalysis);
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
