@@ -369,6 +369,17 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <h3 style="font-size:.95rem;margin:10px 0 4px">Produits les plus vendus (quantité)</h3><div id="anaTopQty"></div>
     <h3 style="font-size:.95rem;margin:10px 0 4px">Produits les plus vendus (chiffre d'affaires)</h3><div id="anaTopAmt"></div>
   </div>
+  <div class="card"><h2>Fournisseurs : plan de paiement</h2>
+    <div class="label" style="margin-bottom:6px">Chaque fournisseur a son objectif : nombre de mois pour finir sa dette. Le programme calcule le montant à payer par mois.</div>
+    <div id="anaPlan"></div>
+  </div>
+  <div class="card"><h2>Charges fixes</h2>
+    <div class="label" style="margin-bottom:6px">Total : <strong id="fxTotal"></strong></div>
+    <div id="fxList"></div>
+    <div class="row"><div class="field"><label for="fxName">Charge</label><input type="text" id="fxName" placeholder="ex : Loyer"></div><div class="field"><label for="fxAmt">Montant (DA)</label><input type="number" id="fxAmt" min="0" step="100"></div><div class="field"><label for="fxPer">Période</label><select id="fxPer"><option value="mois">par mois</option><option value="trim">tous les 3 mois</option><option value="an">par an</option></select></div></div>
+    <div class="row"><button id="fxAdd">Ajouter la charge</button><button class="ghost" id="fxRec">Enregistrer les charges de ce mois</button></div>
+    <div class="label" style="margin-top:6px">« Enregistrer » ajoute les charges du mois dans les dépenses, pour que la caisse et le bénéfice net les prennent en compte. Chaque charge n'est enregistrée qu'une fois par mois.</div>
+  </div>
   <div class="card"><h2>Qualité des données</h2><div id="anaQuality"></div></div>
 </section>
 <section id="tab-todo" class="hidden">
@@ -606,7 +617,7 @@ function renderMoves() {
   }).join("") || `<div class="empty">Aucun mouvement</div>`;
 }
 
-function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); save(); }
+function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.fixed) D.fixed = defaultFixed(); if (!D.supTargets) D.supTargets = {}; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); renderFixed(); renderPlan(); save(); }
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
@@ -1946,13 +1957,15 @@ function renderAnalysis() {
   const from30 = addDaysStr(t, -29);
   const last30 = salesBetween(from30, t);
   const cashAvg = last30.filter(s => !s.credit).reduce((a, s) => a + s.amount, 0) / 30;
-  const expAvg = expensesBetween(from30, t) / 30;
+  const expAvg = D.expenses.filter(e => e.date >= from30 && e.date <= t && !String(e.label).startsWith("[fixe]")).reduce((a, e) => a + e.amount, 0) / 30;
+  const fixedTotal = (D.fixed || []).reduce((a, f) => a + fixedMonthly(f), 0);
   const supplierMonthly = debtList().reduce((a, s) => a + debtMinOf(s), 0);
   const cash = cashBalance().balance;
-  const forecast = Math.round(cash + cashAvg * 30 - expAvg * 30 - supplierMonthly);
+  const forecast = Math.round(cash + cashAvg * 30 - expAvg * 30 - fixedTotal - supplierMonthly);
   document.getElementById("anaForecast").innerHTML = `
     <div>Caisse actuelle : <strong>${fmt(cash)}</strong></div>
     <div>Entrées espèces (moyenne 30 j) : ${fmt(cashAvg * 30)} · dépenses (moyenne 30 j) : −${fmt(expAvg * 30)}</div>
+    <div>Charges fixes (un mois) : −${fmt(fixedTotal)}</div>
     <div>Minimum fournisseurs à payer sur 30 j : −${fmt(supplierMonthly)}</div>
     <div style="margin-top:6px">Caisse prévue dans 30 jours : <strong class="${forecast >= 0 ? "in" : "out"}">${fmt(forecast)}</strong></div>
     <div class="label">Estimation basée sur les 30 derniers jours. ${forecast < 0 ? "⚠ La caisse risque de ne pas suffire." : ""}</div>`;
@@ -2171,6 +2184,101 @@ function renderPeaks() {
   document.getElementById("anaTopAmt").innerHTML = byAmt.length ? byAmt.map(x => row(x, fmt(x.amt))).join("") : `<div class="empty">Pas de ventes</div>`;
 }
 document.getElementById("anaPeriod").addEventListener("change", renderPeaks);
+
+/* ===== Charges fixes ===== */
+function defaultFixed() {
+  return [
+    { id: uid(), name: "Loyer", amount: 30000, period: "mois" },
+    { id: uid(), name: "Sécurité sociale (CNAS)", amount: 43000, period: "an" },
+    { id: uid(), name: "Impôts", amount: 45000, period: "an" },
+    { id: uid(), name: "Téléphone", amount: 2000, period: "mois" },
+    { id: uid(), name: "Électricité", amount: 8000, period: "trim" }
+  ];
+}
+function fixedMonthly(f) { return f.amount / (f.period === "an" ? 12 : f.period === "trim" ? 3 : 1); }
+function periodLabel(p) { return p === "an" ? "an" : p === "trim" ? "3 mois" : "mois"; }
+function renderFixed() {
+  if (!document.getElementById("fxList")) return;
+  const m = today().slice(0, 7);
+  const list = D.fixed || [];
+  document.getElementById("fxTotal").textContent = fmt(list.reduce((a, f) => a + fixedMonthly(f), 0)) + " par mois";
+  document.getElementById("fxList").innerHTML = list.length ? list.map(f => {
+    const done = (D.expenses || []).some(e => e.label === "[fixe] " + f.name && String(e.date).slice(0, 7) === m);
+    return `<div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(f.name)}</div>
+      <div class="meta">${fmt(f.amount)} / ${periodLabel(f.period)} · ${fmt(fixedMonthly(f))} par mois</div></div>
+      <div style="text-align:right"><div class="${done ? "in" : "out"}">${done ? "enregistré ce mois ✔" : "pas encore ce mois ⚠"}</div>
+      <button class="small danger" data-fxdel="${f.id}">×</button></div></div>`;
+  }).join("") : `<div class="empty">Aucune charge fixe</div>`;
+}
+document.getElementById("fxAdd").addEventListener("click", () => {
+  const name = document.getElementById("fxName").value.trim();
+  const amount = parseFloat(document.getElementById("fxAmt").value);
+  if (!name || !amount || amount <= 0) return alert("Mets le nom et le montant.");
+  D.fixed.push({ id: uid(), name, amount, period: document.getElementById("fxPer").value });
+  document.getElementById("fxName").value = ""; document.getElementById("fxAmt").value = "";
+  renderAll();
+});
+document.getElementById("fxRec").addEventListener("click", () => {
+  const t = today(), m = t.slice(0, 7);
+  let n = 0;
+  (D.fixed || []).forEach(f => {
+    const label = "[fixe] " + f.name;
+    if ((D.expenses || []).some(e => e.label === label && String(e.date).slice(0, 7) === m)) return;
+    D.expenses.push({ id: uid(), date: t, label, amount: r2(fixedMonthly(f)) });
+    n++;
+  });
+  renderAll();
+  alert(n ? n + " charge(s) enregistrée(s) pour ce mois." : "Les charges de ce mois sont déjà enregistrées.");
+});
+document.getElementById("fxList").addEventListener("click", e => {
+  const id = e.target.dataset.fxdel;
+  if (!id) return;
+  if (e.target.dataset.armed !== "1") { e.target.dataset.armed = "1"; e.target.textContent = "Confirmer ?"; return; }
+  D.fixed = D.fixed.filter(f => f.id !== id);
+  renderAll();
+});
+
+/* ===== Plan de paiement par fournisseur (objectif propre à chacun) ===== */
+function renderPlan() {
+  if (!document.getElementById("anaPlan")) return;
+  if (!D.supTargets) D.supTargets = {};
+  const t = today(), m = t.slice(0, 7);
+  const rows = debtList().filter(s => debtOwed(s) > 0).map(s => {
+    const owed = debtOwed(s);
+    const min = debtMinOf(s);
+    const paidMonth = s.payments.filter(p => String(p.date).slice(0, 7) === m).reduce((a, p) => a + p.amount, 0);
+    const months = (D.supTargets[s.id] || 6);
+    const targetMonthly = Math.ceil(owed / months);
+    const monthsAtMin = min > 0 ? Math.ceil(owed / min) : "—";
+    const day = parseInt(t.slice(8, 10), 10), due = s.dueDay || 10;
+    let st;
+    if (paidMonth >= min) st = { cls: "in", txt: "à jour ce mois" };
+    else if (day > due) st = { cls: "out", txt: "en retard (échéance le " + due + ")" };
+    else st = { cls: "", txt: "à payer avant le " + due + " (" + fmt(min - paidMonth) + " restants)" };
+    return { s, owed, min, paidMonth, months, targetMonthly, monthsAtMin, st };
+  }).sort((a, b) => b.owed - a.owed);
+  document.getElementById("anaPlan").innerHTML = rows.length ? rows.map(r => `
+    <div class="item" style="padding:8px 0;align-items:flex-start"><div style="flex:1">
+      <div class="name">${esc(r.s.name)}</div>
+      <div class="meta">Dette : <strong>${fmt(r.owed)}</strong> · minimum ce mois : ${fmt(r.min)}</div>
+      <div class="meta">Au rythme minimum : ${r.monthsAtMin} mois</div>
+      <div class="meta">Objectif : <strong>${fmt(r.targetMonthly)} / mois</strong> pendant ${r.months} mois</div>
+      <div class="${r.st.cls}">${r.st.txt}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+      <label class="meta">Mois</label><input type="number" min="1" step="1" id="tg_${r.s.id}" value="${r.months}" style="width:80px">
+      <button class="small" data-tgsave="${r.s.id}">Enregistrer</button>
+    </div></div>`).join("")
+    : `<div class="empty">Aucune dette fournisseur</div>`;
+}
+document.getElementById("anaPlan").addEventListener("click", e => {
+  const id = e.target.dataset.tgsave;
+  if (!id) return;
+  const v = parseInt(document.getElementById("tg_" + id).value, 10);
+  if (!v || v < 1) return alert("Mets un nombre de mois (au moins 1).");
+  D.supTargets[id] = v;
+  renderAll();
+});
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
