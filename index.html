@@ -611,9 +611,10 @@ function renderMoves() {
   document.getElementById("movList").innerHTML = list.map(m => {
     const p = prodById(m.productId);
     const sign = m.type === "in" ? "+" : "−";
+    const manual = !m.saleId && !m.receiptId && !/^(Mise en pot|Transfert|Facture|Vente)/.test(m.note || "");
     return `<div class="item"><div><div class="name">${esc(p ? p.name : "(supprimé)")}</div>
       <div class="meta">${esc(m.date)}${m.note ? " · " + esc(m.note) : ""}</div></div>
-      <div class="qty ${m.type === "in" ? "in" : "out"}">${sign}${num(m.qty)} ${esc(p ? p.unit : "")}</div></div>`;
+      <div class="qty ${m.type === "in" ? "in" : "out"}">${sign}${num(m.qty)} ${esc(p ? p.unit : "")}</div>${manual ? `<button class="small danger" data-mdel="${m.id}">×</button>` : ""}</div>`;
   }).join("") || `<div class="empty">Aucun mouvement</div>`;
 }
 
@@ -733,8 +734,10 @@ function addDebtForReceipt(supplier, total, desc, date) {
   const list = debtList();
   let s = supplierMatch(list, supplier);
   if (!s) { s = { id: "s" + uid(), name: supplier.trim(), note: "", dueDay: 10, terms: 30, freq: "monthly", debts: [], payments: [] }; list.push(s); }
-  s.debts.push({ id: "d" + uid(), date, amount: total, desc });
+  const did = "d" + uid();
+  s.debts.push({ id: did, date, amount: total, desc });
   try { localStorage.setItem(DEBT_KEY, JSON.stringify(list)); } catch (e) {}
+  return { sid: s.id, did };
 }
 function renderBuyForm() {
   document.getElementById("bLines").innerHTML = bLines.map((l, i) => `
@@ -783,17 +786,18 @@ document.getElementById("bSave").addEventListener("click", () => {
   if (!bLines.length) return alert("Ajoute au moins une ligne.");
   const total = bLines.reduce((a, l) => a + l.qty * l.price, 0);
   const note = document.getElementById("bNote").value.trim();
+  const rid = uid();
   bLines.forEach(l => {
     const p = prodById(l.productId);
     if (!p) return;
     p.stock = p.stock + l.qty;
     if (l.price > 0) p.buy = l.price;
     touch(p);
-    D.moves.push({ id: uid(), productId: p.id, type: "in", qty: l.qty, date, note: "Bon : " + supplier + (note ? " · " + note : "") });
+    D.moves.push({ id: uid(), productId: p.id, type: "in", qty: l.qty, date, note: "Bon : " + supplier + (note ? " · " + note : ""), receiptId: rid });
   });
-  D.receipts.push({ id: uid(), date, supplier, note, total, photo: bPhotoData,
-    lines: bLines.map(l => ({ name: l.name, qty: l.qty, price: l.price })) });
-  addDebtForReceipt(supplier, total, "Bon d'achat " + date + (note ? " · " + note : ""), date);
+  D.receipts.push({ id: rid, date, supplier, note, total, photo: bPhotoData,
+    debtRef: addDebtForReceipt(supplier, total, "Bon d'achat " + date + (note ? " · " + note : ""), date),
+    lines: bLines.map(l => ({ productId: l.productId, name: l.name, qty: l.qty, price: l.price })) });
   bLines = []; bPhotoData = "";
   document.getElementById("bSup").value = ""; document.getElementById("bNote").value = "";
   document.getElementById("bPhoto").value = ""; document.getElementById("bPreview").innerHTML = "";
@@ -813,7 +817,7 @@ function renderReceipts() {
     <div class="item"><div style="flex:1"><div class="name">${esc(r.supplier)}</div>
       <div class="meta">${esc(r.date)} · ${r.lines.length} produit(s)${r.note ? " · " + esc(r.note) : ""}</div>
       ${r.photo ? `<img src="${r.photo}" style="max-width:100%;border-radius:8px;margin-top:6px">` : ""}</div>
-    <div class="qty">${fmt(r.total)}</div></div>`).join("") || `<div class="empty">Aucun bon</div>`;
+    <div style="text-align:right"><div class="qty">${fmt(r.total)}</div><div class="actions"><button class="small ghost" data-redit="${r.id}">Modifier</button><button class="small danger" data-rdel="${r.id}">Supprimer</button></div></div></div>`).join("") || `<div class="empty">Aucun bon</div>`;
   document.getElementById("bDate").value = document.getElementById("bDate").value || today();
 }
 
@@ -2091,6 +2095,52 @@ document.getElementById("cdGo").addEventListener("click", () => {
   alert("Transfert effectué : " + plan.lines.length + " format(s), " + num(plan.totalKg) + " kg utilisés.");
 });
 
+/* ===== Modifier / supprimer un bon d'achat ===== */
+function undoReceipt(id) {
+  const r = D.receipts.find(x => x.id === id);
+  if (!r) return null;
+  D.moves.filter(m => m.receiptId === id).forEach(m => {
+    const p = prodById(m.productId);
+    if (p) { p.stock = Math.max(0, r2(p.stock - m.qty)); touch(p); }
+  });
+  D.moves = D.moves.filter(m => m.receiptId !== id);
+  if (r.debtRef) {
+    const list = debtList();
+    const s = list.find(x => x.id === r.debtRef.sid);
+    if (s) s.debts = s.debts.filter(d => d.id !== r.debtRef.did);
+    try { localStorage.setItem(DEBT_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  D.receipts = D.receipts.filter(x => x.id !== id);
+  return r;
+}
+document.getElementById("bList").addEventListener("click", e => {
+  const t = e.target;
+  if (t.dataset.redit) {
+    const r = D.receipts.find(x => x.id === t.dataset.redit);
+    if (!r) return;
+    if (!r.debtRef) return alert("Ce bon est ancien : il ne peut pas être modifié automatiquement. Supprime-le et ressaisis-le si nécessaire.");
+    undoReceipt(r.id);
+    bLines = r.lines.map(l => ({ productId: l.productId || (D.products.find(p => p.name === l.name) || {}).id, name: l.name, qty: l.qty, price: l.price })).filter(l => l.productId);
+    document.getElementById("bSup").value = r.supplier;
+    document.getElementById("bDate").value = r.date;
+    document.getElementById("bNote").value = r.note || "";
+    bPhotoData = r.photo || "";
+    document.getElementById("bPreview").innerHTML = bPhotoData ? `<img src="${bPhotoData}" style="max-width:100%;border-radius:8px;margin-top:8px">` : "";
+    renderAll();
+    renderBuyForm();
+    document.querySelector('.tab[data-tab="buy"]').click();
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (t.dataset.rdel) {
+    if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "Confirmer ?"; return; }
+    const r = D.receipts.find(x => x.id === t.dataset.rdel);
+    if (r && !r.debtRef) alert("Bon ancien : la dette et les quantités de ce bon ne sont pas revenues automatiquement.");
+    undoReceipt(t.dataset.rdel);
+    renderAll();
+  }
+});
+
 /* ===== Liste d'achat ===== */
 const WISH_STATUS = { todo: "À chercher", found: "Trouvé", bought: "Acheté" };
 const WISH_NEXT = { todo: "found", found: "bought", bought: "todo" };
@@ -2277,6 +2327,18 @@ document.getElementById("anaPlan").addEventListener("click", e => {
   const v = parseInt(document.getElementById("tg_" + id).value, 10);
   if (!v || v < 1) return alert("Mets un nombre de mois (au moins 1).");
   D.supTargets[id] = v;
+  renderAll();
+});
+
+document.getElementById("movList").addEventListener("click", e => {
+  const id = e.target.dataset.mdel;
+  if (!id) return;
+  if (e.target.dataset.armed !== "1") { e.target.dataset.armed = "1"; e.target.textContent = "Confirmer ?"; return; }
+  const m = D.moves.find(x => x.id === id);
+  if (!m) return;
+  const p = prodById(m.productId);
+  if (p) { p.stock = m.type === "in" ? Math.max(0, r2(p.stock - m.qty)) : r2(p.stock + m.qty); touch(p); }
+  D.moves = D.moves.filter(x => x.id !== id);
   renderAll();
 });
 
@@ -2476,7 +2538,7 @@ function renderPayments() {
   document.getElementById("payList").innerHTML = all.slice(0, 20).map(({ s, p }) =>
     `<div class="month"><span>${esc(p.date)} · ${esc(s.name)}${p.note ? " · " + esc(p.note) : ""}</span>
      <span style="display:flex;gap:6px;align-items:center"><strong>${fmt(p.amount)}</strong>
-     <button class="small danger" data-delpay="${s.id}|${p.id}">×</button></span></div>`
+     <button class="small danger" data-editpay="${s.id}|${p.id}">Modifier</button> <button class="small danger" data-delpay="${s.id}|${p.id}">×</button></span></div>`
   ).join("") || `<div class="empty">Aucun paiement</div>`;
 }
 
@@ -2601,10 +2663,24 @@ document.getElementById("dpSave").addEventListener("click", () => {
   renderAll();
 });
 document.getElementById("payList").addEventListener("click", e => {
-  const v = e.target.dataset.delpay; if (!v) return;
+  const v = e.target.dataset.delpay || e.target.dataset.editpay; if (!v) return;
   const [sid, pid] = v.split("|");
   const s = S.find(x => x.id === sid);
-  if (s && confirm("Supprimer ce paiement ?")) { s.payments = s.payments.filter(p => p.id !== pid); renderAll(); }
+  const p = s ? s.payments.find(x => x.id === pid) : null;
+  if (!p) return;
+  if (e.target.dataset.editpay) {
+    s.payments = s.payments.filter(x => x.id !== pid);
+    renderAll();
+    document.getElementById("pSup").value = s.id;
+    document.getElementById("pAmt").value = p.amount;
+    document.getElementById("pDate").value = p.date;
+    document.getElementById("pNote").value = p.note || "";
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (e.target.dataset.armed !== "1") { e.target.dataset.armed = "1"; e.target.textContent = "Confirmer ?"; return; }
+  s.payments = s.payments.filter(x => x.id !== pid);
+  renderAll();
 });
 
 /* Sauvegarde */
