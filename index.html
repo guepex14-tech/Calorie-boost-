@@ -232,7 +232,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="row"><button id="pSave">Enregistrer</button><button class="ghost" id="pCancel">Annuler</button></div>
   </div>
   <div class="card"><h2>Liste</h2><input type="text" id="pListSearch" placeholder="Chercher un produit (ex : سدر، زيت...)" autocomplete="off" style="width:100%;margin-bottom:8px"><div class="row" style="margin:0 0 8px"><div class="field"><label for="pSort">Trier par</label><select id="pSort"><option value="default">Ordre d'ajout</option><option value="margin_desc">Marge : la plus haute</option><option value="margin_asc">Marge : la plus basse</option><option value="qty_desc">Quantité : la plus grande</option><option value="qty_asc">Quantité : la plus petite</option><option value="old">Dernier mouvement : le plus ancien</option></select></div>
-      <div class="field"><label for="pFilter">Afficher</label><select id="pFilter"><option value="all">Tous</option><option value="needed">المطلوبة (تحت الحد الأدنى)</option><option value="out">Rupture (stock 0)</option><option value="nomargin">Sans marge définie</option><option value="noprice">Sans prix de vente</option></select></div></div>
+      <div class="field"><label for="pFilter">Afficher</label><select id="pFilter"><option value="all">Tous</option><option value="needed">المطلوبة (تحت الحد الأدنى)</option><option value="out">Rupture (stock 0)</option><option value="nomargin">Sans marge définie</option><option value="noprice">Sans prix de vente</option><option value="kg">Au poids (kg)</option><option value="unit">À l'unité</option></select></div></div>
     <div class="meta" id="pListCount" style="margin-bottom:6px"></div><div id="prodList"></div></div>
 </section>
 
@@ -875,7 +875,8 @@ function cartLines() {
     const eff = qty > 0 ? net / qty : 0;
     const profit = r2(net - qty * (p.buy || 0));
     const warn = (p.buy || 0) > 0 && eff < floorPrice(p) - 0.005;
-    return { productId: l.productId, name: l.name, amount: l.amount, p, qty, net, discLine, eff, profit, warn };
+    const lowUnit = !weighed && (p.sell || 0) > 0 && l.amount < (p.sell || 0) * 0.5;
+    return { productId: l.productId, name: l.name, amount: l.amount, p, qty, net, discLine, eff, profit, warn, lowUnit };
   });
 }
 function renderCart() {
@@ -883,7 +884,7 @@ function renderCart() {
   document.getElementById("cartList").innerHTML = lines.length ? lines.map((l, i) => `
     <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(l.name)}</div>
     <div class="meta">${num(l.qty)} ${esc(l.p.unit || "")} · payé ${fmt(l.amount)}${l.discLine ? " · remise " + fmt(l.discLine) : ""}${(l.p.unit || "kg") !== "kg" ? " · prix unitaire " + fmt(l.p.sell) : ""} · bénéfice ${fmt(l.profit)}</div>
-    ${l.warn ? `<div class="out">⚠ sous la marge minimale (${pctTxt(l.p)})</div>` : ""}${minPctOf(l.p) == null ? `<div class="out">⚠ marge non définie pour ce produit</div>` : ""}</div>
+    ${l.warn ? `<div class="out">⚠ sous la marge minimale (${pctTxt(l.p)})</div>` : ""}${minPctOf(l.p) == null ? `<div class="out">⚠ marge non définie pour ce produit</div>` : ""}${l.lowUnit ? `<div class="out">⚠ Prix très bas pour une unité. Si ce produit se vend au poids, mets son unité en kg dans Produits.</div>` : ""}</div>
     <div style="text-align:right"><div class="qty in">${fmt(l.net)}</div><button class="small danger" data-rm="${i}">×</button></div></div>`).join("")
     : `<div class="empty">Aucun produit dans la facture</div>`;
   const t = invoiceTotals();
@@ -1864,6 +1865,8 @@ function productsForList() {
   if (f === "out") list = list.filter(p => p.stock <= 0);
   if (f === "nomargin") list = list.filter(p => minPctOf(p) == null);
   if (f === "noprice") list = list.filter(p => !(p.sell > 0));
+  if (f === "kg") list = list.filter(p => (p.unit || "kg") === "kg");
+  if (f === "unit") list = list.filter(p => (p.unit || "kg") !== "kg");
   const margin = p => (p.buy > 0 ? (p.sell - p.buy) / p.buy * 100 : -Infinity);
   if (sortBy === "margin_desc") list.sort((a, b) => margin(b) - margin(a));
   if (sortBy === "margin_asc") list.sort((a, b) => margin(a) - margin(b));
