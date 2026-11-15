@@ -314,6 +314,16 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="row"><button id="cSet" class="ghost">Enregistrer le solde</button></div>
   </div>
   <div class="card">
+    <h2>Ajustement de caisse</h2>
+    <div class="label" style="margin-bottom:8px">Pour corriger le montant réel en caisse (erreur de monnaie, argent retiré...). Cet ajustement change seulement la caisse : il ne touche ni le stock, ni les ventes, ni les dettes, ni le bénéfice.</div>
+    <div class="row" style="margin-top:0">
+      <div class="field"><label for="cadjAmt">Montant (+ ajoute, − retire)</label><input type="number" id="cadjAmt" step="10" placeholder="ex : -500"></div>
+      <div class="field"><label for="cadjDate">Date</label><input type="date" id="cadjDate"></div>
+    </div>
+    <div class="row"><input type="text" id="cadjNote" placeholder="Raison (ex : erreur de monnaie)"><button id="cadjAdd">Enregistrer l'ajustement</button></div>
+    <div id="cadjList" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
     <h2>Dépense</h2>
     <div class="row" style="margin-top:0">
       <div class="field"><label for="eLabel">Motif</label><input type="text" id="eLabel" placeholder="Loyer, électricité, transport..."></div>
@@ -618,7 +628,7 @@ function renderMoves() {
   }).join("") || `<div class="empty">Aucun mouvement</div>`;
 }
 
-function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.fixed) D.fixed = defaultFixed(); if (!D.supTargets) D.supTargets = {}; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); renderFixed(); renderPlan(); save(); }
+function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.fixed) D.fixed = defaultFixed(); if (!D.supTargets) D.supTargets = {}; if (!D.cashAdj) D.cashAdj = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); renderFixed(); renderPlan(); renderCashAdj(); save(); }
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
@@ -837,7 +847,8 @@ function cashBalance() {
   const exp = since(D.expenses, x => x.amount);
   const pays = debtSuppliers().reduce((a, s) => a + since(s.payments, p => p.amount), 0);
   const custPay = (D.customers || []).reduce((a, c) => a + since(c.entries.filter(e => e.type === "payment"), e => e.amount), 0);
-  return { balance: D.cash.balance + sales - exp - pays + custPay, sales, exp, pays };
+  const adj = (D.cashAdj || []).filter(x => x.date >= d0).reduce((a, x) => a + x.amount, 0);
+  return { balance: D.cash.balance + sales - exp - pays + custPay + adj, sales, exp, pays, adj };
 }
 
 let sSel = null;
@@ -1092,7 +1103,7 @@ function renderCash() {
   document.getElementById("cBal").textContent = fmt(c.balance);
   document.getElementById("cDetail").textContent =
     "Depuis le " + D.cash.date + " · départ " + fmt(D.cash.balance) + " + ventes " + fmt(c.sales) +
-    " − dépenses " + fmt(c.exp) + " − paiements fournisseurs " + fmt(c.pays);
+    " − dépenses " + fmt(c.exp) + " − paiements fournisseurs " + fmt(c.pays) + " ± ajustements " + fmt(c.adj);
   document.getElementById("cDate2").value = D.cash.date;
   document.getElementById("cBal2").value = D.cash.balance;
   document.getElementById("eDate").value = document.getElementById("eDate").value || today();
@@ -2339,6 +2350,33 @@ document.getElementById("movList").addEventListener("click", e => {
   const p = prodById(m.productId);
   if (p) { p.stock = m.type === "in" ? Math.max(0, r2(p.stock - m.qty)) : r2(p.stock + m.qty); touch(p); }
   D.moves = D.moves.filter(x => x.id !== id);
+  renderAll();
+});
+
+/* ===== Ajustement de caisse (ne touche que la caisse) ===== */
+function renderCashAdj() {
+  if (!document.getElementById("cadjList")) return;
+  if (!D.cashAdj) D.cashAdj = [];
+  document.getElementById("cadjDate").value = document.getElementById("cadjDate").value || today();
+  const list = [...D.cashAdj].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+  document.getElementById("cadjList").innerHTML = list.length ? list.map(x => `
+    <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(x.note || "Ajustement")}</div><div class="meta">${esc(x.date)}</div></div>
+    <div style="text-align:right"><div class="qty ${x.amount >= 0 ? "in" : "out"}">${x.amount >= 0 ? "+" : "−"}${fmt(Math.abs(x.amount))}</div>
+    <button class="small danger" data-cadjdel="${x.id}">×</button></div></div>`).join("")
+    : `<div class="empty">Aucun ajustement</div>`;
+}
+document.getElementById("cadjAdd").addEventListener("click", () => {
+  const amt = parseFloat(document.getElementById("cadjAmt").value);
+  if (isNaN(amt) || amt === 0) return alert("Mets un montant (positif ou négatif).");
+  D.cashAdj.push({ id: uid(), date: document.getElementById("cadjDate").value || today(), amount: r2(amt), note: document.getElementById("cadjNote").value.trim() });
+  document.getElementById("cadjAmt").value = ""; document.getElementById("cadjNote").value = "";
+  renderAll();
+});
+document.getElementById("cadjList").addEventListener("click", e => {
+  const id = e.target.dataset.cadjdel;
+  if (!id) return;
+  if (e.target.dataset.armed !== "1") { e.target.dataset.armed = "1"; e.target.textContent = "Confirmer ?"; return; }
+  D.cashAdj = D.cashAdj.filter(x => x.id !== id);
   renderAll();
 });
 
