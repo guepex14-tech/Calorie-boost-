@@ -362,6 +362,13 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <div class="card"><h2>Produits les plus rentables (30 jours)</h2><div id="anaTop"></div></div>
   <div class="card"><h2>Stock qui dort (sans vente depuis 30 jours)</h2><div id="anaSleep"></div></div>
   <div class="card"><h2>Clients avec dettes anciennes (plus de 30 jours)</h2><div id="anaCust"></div></div>
+  <div class="card"><h2>Moments forts et produits</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="anaPeriod">Période</label><select id="anaPeriod"><option value="30">30 derniers jours</option><option value="all">Tout l'historique</option></select></div></div>
+    <h3 style="font-size:.95rem;margin:10px 0 4px">Jours les plus vendeurs</h3><div id="anaDays"></div>
+    <h3 style="font-size:.95rem;margin:10px 0 4px">Heures les plus actives</h3><div id="anaHours"></div>
+    <h3 style="font-size:.95rem;margin:10px 0 4px">Produits les plus vendus (quantité)</h3><div id="anaTopQty"></div>
+    <h3 style="font-size:.95rem;margin:10px 0 4px">Produits les plus vendus (chiffre d'affaires)</h3><div id="anaTopAmt"></div>
+  </div>
   <div class="card"><h2>Qualité des données</h2><div id="anaQuality"></div></div>
 </section>
 <section id="tab-todo" class="hidden">
@@ -599,7 +606,7 @@ function renderMoves() {
   }).join("") || `<div class="empty">Aucun mouvement</div>`;
 }
 
-function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderWish(); save(); }
+function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); save(); }
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
@@ -2120,6 +2127,47 @@ document.getElementById("wList").addEventListener("click", e => {
   }
 });
 
+
+/* ===== Moments forts et produits les plus vendus ===== */
+const WEEKDAYS = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+function renderPeaks() {
+  if (!document.getElementById("anaDays")) return;
+  const period = document.getElementById("anaPeriod").value;
+  const from = period === "30" ? addDaysStr(today(), -29) : "0000-00-00";
+  const sales = D.sales.filter(s => s.date >= from);
+  // Jours de la semaine
+  const days = WEEKDAYS.map(n => ({ n, amt: 0, cnt: 0 }));
+  sales.forEach(s => { const d = days[new Date(s.date + "T00:00:00").getDay()]; d.amt += s.amount; d.cnt++; });
+  const maxDay = Math.max(1, ...days.map(d => d.amt));
+  const sortedDays = [...days].sort((a, b) => b.amt - a.amt);
+  document.getElementById("anaDays").innerHTML = sales.length ? sortedDays.map(d => `
+    <div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13px"><span style="width:80px">${d.n}</span>
+    <div style="flex:1;background:var(--border);border-radius:4px;height:10px"><div style="height:10px;border-radius:4px;background:var(--accent);width:${Math.round(d.amt / maxDay * 100)}%"></div></div>
+    <span style="width:110px;text-align:right">${fmt(d.amt)} · ${d.cnt}</span></div>`).join("")
+    : `<div class="empty">Pas de ventes sur cette période</div>`;
+  // Heures (seulement les ventes enregistrées après la mise à jour qui garde l'heure)
+  const hours = Array.from({ length: 24 }, (_, h) => ({ h, amt: 0, cnt: 0 }));
+  const timed = sales.filter(s => s.ts);
+  timed.forEach(s => { const x = hours[new Date(s.ts).getHours()]; x.amt += s.amount; x.cnt++; });
+  const maxH = Math.max(1, ...hours.map(x => x.amt));
+  const topHours = hours.filter(x => x.cnt > 0).sort((a, b) => b.amt - a.amt).slice(0, 8);
+  document.getElementById("anaHours").innerHTML = !timed.length
+    ? `<div class="label">Les heures apparaissent pour les ventes enregistrées après cette mise à jour.</div>`
+    : topHours.map(x => `
+      <div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13px"><span style="width:80px">${String(x.h).padStart(2, "0")}h – ${String((x.h + 1) % 24).padStart(2, "0")}h</span>
+      <div style="flex:1;background:var(--border);border-radius:4px;height:10px"><div style="height:10px;border-radius:4px;background:var(--accent);width:${Math.round(x.amt / maxH * 100)}%"></div></div>
+      <span style="width:110px;text-align:right">${fmt(x.amt)} · ${x.cnt}</span></div>`).join("");
+  // Produits
+  const agg = {};
+  sales.forEach(s => { const k = s.productId; agg[k] = agg[k] || { name: s.name, qty: 0, amt: 0, unit: s.unit }; agg[k].qty += s.qty; agg[k].amt += s.amount; });
+  const list = Object.values(agg);
+  const byQty = [...list].sort((a, b) => b.qty - a.qty).slice(0, 10);
+  const byAmt = [...list].sort((a, b) => b.amt - a.amt).slice(0, 10);
+  const row = (x, v) => `<div class="item" style="padding:5px 0"><div class="name">${esc(x.name)}</div><div class="qty">${v}</div></div>`;
+  document.getElementById("anaTopQty").innerHTML = byQty.length ? byQty.map(x => row(x, num(x.qty) + " " + esc(x.unit))).join("") : `<div class="empty">Pas de ventes</div>`;
+  document.getElementById("anaTopAmt").innerHTML = byAmt.length ? byAmt.map(x => row(x, fmt(x.amt))).join("") : `<div class="empty">Pas de ventes</div>`;
+}
+document.getElementById("anaPeriod").addEventListener("change", renderPeaks);
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
