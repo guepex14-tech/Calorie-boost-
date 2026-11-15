@@ -232,7 +232,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     </div>
     <div class="row"><button id="pSave">Enregistrer</button><button class="ghost" id="pCancel">Annuler</button></div>
   </div>
-  <div class="card"><h2>Liste</h2><div id="prodList"></div></div>
+  <div class="card"><h2>Liste</h2><input type="text" id="pListSearch" placeholder="Chercher un produit (ex : سدر، زيت...)" autocomplete="off" style="width:100%;margin-bottom:8px"><div class="meta" id="pListCount" style="margin-bottom:6px"></div><div id="prodList"></div></div>
 </section>
 
 <section id="tab-mov" class="hidden">
@@ -523,7 +523,7 @@ function renderDash() {
 }
 
 function renderProducts() {
-  document.getElementById("prodList").innerHTML = D.products.map(p => `
+  document.getElementById("prodList").innerHTML = productsForList().map(p => `
     <div class="item"><div><div class="name">${esc(p.name)}</div>
     <div class="meta">Achat ${fmt(p.buy)} · Vente ${fmt(p.sell)} · Seuil ${num(p.min)} ${esc(p.unit)}</div><div class="meta ${sellStatus(p).cls}">${esc(sellStatus(p).txt)}</div></div>
     <div style="text-align:right"><div class="qty">${num(p.stock)} ${esc(p.unit)}</div>
@@ -1736,6 +1736,16 @@ function customerOp(type) {
 }
 document.getElementById("cDebt").addEventListener("click", () => customerOp("debt"));
 document.getElementById("cPay").addEventListener("click", () => customerOp("payment"));
+
+/* ===== Recherche dans la liste des produits ===== */
+function productsForList() {
+  const q = normTxt(document.getElementById("pListSearch") ? document.getElementById("pListSearch").value : "");
+  const list = q ? D.products.filter(p => normTxt(p.name).includes(q)) : D.products;
+  const cnt = document.getElementById("pListCount");
+  if (cnt) cnt.textContent = q ? list.length + " résultat(s) sur " + D.products.length : D.products.length + " produit(s)";
+  return list;
+}
+document.getElementById("pListSearch").addEventListener("input", renderProducts);
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
