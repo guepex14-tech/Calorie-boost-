@@ -141,6 +141,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <button class="tab" data-tab="cli">Clients</button>
   <button class="tab" data-tab="sit">Situation</button>
   <button class="tab" data-tab="ana">تحليل</button>
+  <button class="tab" data-tab="todo">À acheter</button>
   <button class="tab" data-tab="sync">Synchro</button>
   <button class="tab" data-tab="data">Sauvegarde</button>
 </div>
@@ -159,10 +160,11 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="row" style="margin-top:10px">
       <div class="field"><label for="sCust">Client (facultatif, obligatoire si crédit)</label><input type="text" id="sCust" list="custNames" placeholder="nom du client" autocomplete="off"><datalist id="custNames"></datalist></div>
       <div class="field"><label for="sPay">Paiement</label><select id="sPay"><option value="cash">Comptant</option><option value="credit">Crédit (client)</option></select></div>
+      <div class="field" id="sPaidField" style="display:none"><label for="sPaidNow">Payé maintenant (acompte, DA)</label><input type="number" id="sPaidNow" min="0" step="10" placeholder="0"></div>
     </div>
     <div class="field" style="margin-top:10px"><label for="sSearch">Produit (tape 1, 2 ou 3 lettres)</label><input type="text" id="sSearch" autocomplete="off" placeholder="ex : سدر، زيت، تلبي..."><div id="sSug" class="sug"></div></div>
     <div class="row">
-      <div class="field"><label for="sValue">Montant payé pour ce produit (DA)</label><input type="number" id="sValue" min="0" step="10" inputmode="decimal"></div>
+      <div class="field"><label for="sValue">Prix / montant payé (DA)</label><input type="number" id="sValue" min="0" step="10" inputmode="decimal"></div>
       <button id="sAddLine">Ajouter</button>
     </div>
     <div id="cartList" style="margin-top:8px"></div>
@@ -221,14 +223,17 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <div class="field"><label for="pBuy">Prix d'achat (DA)</label><input type="number" id="pBuy" min="0" step="10" value="0"></div>
       <div class="field"><label for="pSell">Prix de vente (DA)</label><input type="number" id="pSell" min="0" step="10" value="0"></div>
     </div>
+    <div class="row"><div class="field"><label for="pPack">Emballage par unité (DA)</label><input type="number" id="pPack" min="0" step="1"></div><div class="field"><label for="pComp">Prix du concurrent (DA, facultatif)</label><input type="number" id="pComp" min="0" step="10"></div></div>
     <div class="row"><div class="field"><label for="pMinPct">Marge minimale de ce produit (%) : obligatoire</label><input type="number" id="pMinPct" min="0" step="1"></div></div>
     <div class="card" style="padding:10px;margin:0 0 10px">
       <div id="pHint" class="label"></div>
-      <div class="row" style="margin-top:6px"><button class="small" id="pUseSug">Utiliser le prix minimum</button></div>
+      <div class="row" style="margin-top:6px"><button class="small" id="pUseSug">Accepter le prix suggéré</button></div>
     </div>
     <div class="row"><button id="pSave">Enregistrer</button><button class="ghost" id="pCancel">Annuler</button></div>
   </div>
-  <div class="card"><h2>Liste</h2><input type="text" id="pListSearch" placeholder="Chercher un produit (ex : سدر، زيت...)" autocomplete="off" style="width:100%;margin-bottom:8px"><div class="meta" id="pListCount" style="margin-bottom:6px"></div><div id="prodList"></div></div>
+  <div class="card"><h2>Liste</h2><input type="text" id="pListSearch" placeholder="Chercher un produit (ex : سدر، زيت...)" autocomplete="off" style="width:100%;margin-bottom:8px"><div class="row" style="margin:0 0 8px"><div class="field"><label for="pSort">Trier par</label><select id="pSort"><option value="default">Ordre d'ajout</option><option value="margin_desc">Marge : la plus haute</option><option value="margin_asc">Marge : la plus basse</option><option value="qty_desc">Quantité : la plus grande</option><option value="qty_asc">Quantité : la plus petite</option><option value="old">Dernier mouvement : le plus ancien</option></select></div>
+      <div class="field"><label for="pFilter">Afficher</label><select id="pFilter"><option value="all">Tous</option><option value="needed">المطلوبة (تحت الحد الأدنى)</option><option value="out">Rupture (stock 0)</option><option value="nomargin">Sans marge définie</option><option value="noprice">Sans prix de vente</option></select></div></div>
+    <div class="meta" id="pListCount" style="margin-bottom:6px"></div><div id="prodList"></div></div>
 </section>
 
 <section id="tab-mov" class="hidden">
@@ -358,6 +363,24 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <div class="card"><h2>Stock qui dort (sans vente depuis 30 jours)</h2><div id="anaSleep"></div></div>
   <div class="card"><h2>Clients avec dettes anciennes (plus de 30 jours)</h2><div id="anaCust"></div></div>
   <div class="card"><h2>Qualité des données</h2><div id="anaQuality"></div></div>
+</section>
+<section id="tab-todo" class="hidden">
+  <div class="card">
+    <h2>Liste d'achat (produits à chercher)</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="wName">Produit</label><input type="text" id="wName" placeholder="ex : زبدة الشيا"></div></div>
+    <div class="row">
+      <div class="field"><label for="wQty">Quantité voulue</label><input type="number" id="wQty" min="0" step="0.1"></div>
+      <div class="field"><label for="wUnit">Unité</label><select id="wUnit"><option value="unité">unité</option><option value="kg">kg</option></select></div>
+      <div class="field"><label for="wPrice">Prix max souhaité (DA)</label><input type="number" id="wPrice" min="0" step="10"></div>
+    </div>
+    <div class="row"><div class="field"><label for="wWhere">Où chercher (fournisseur / marché)</label><input type="text" id="wWhere" placeholder="ex : Bioasis, marché..."></div></div>
+    <div class="row"><input type="text" id="wNote" placeholder="Note (marque, taille, remarque...)"><button id="wAdd">Ajouter à la liste</button></div>
+  </div>
+  <div class="card">
+    <div class="row" style="margin-top:0"><div class="field"><label for="wFilter">Afficher</label><select id="wFilter"><option value="all">Tous</option><option value="todo">À chercher</option><option value="found">Trouvé</option><option value="bought">Acheté</option></select></div></div>
+    <div class="meta" id="wCount" style="margin:6px 0"></div>
+    <div id="wList"></div>
+  </div>
 </section>
 <section id="tab-sync" class="hidden">
   <div class="card">
@@ -525,7 +548,7 @@ function seed() {
 
 let D;
 function load() {
-  try { const v = JSON.parse(localStorage.getItem(KEY)); if (v && Array.isArray(v.products)) { if (!v.receipts) v.receipts = []; if (!v.sales) v.sales = []; if (!v.customers) v.customers = [];
+  try { const v = JSON.parse(localStorage.getItem(KEY)); if (v && Array.isArray(v.products)) { if (!v.receipts) v.receipts = []; if (!v.sales) v.sales = []; if (!v.customers) v.customers = []; if (!v.wish) v.wish = [];
     v.products.forEach(p => { if (p.minPct === undefined) p.minPct = null; }); if (!v.expenses) v.expenses = []; if (!v.cash) v.cash = { date: today(), balance: 0 }; return v; } } catch (e) {}
   return seed();
 }
@@ -576,15 +599,17 @@ function renderMoves() {
   }).join("") || `<div class="empty">Aucun mouvement</div>`;
 }
 
-function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); save(); }
+function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderWish(); save(); }
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
   t.classList.add("on");
-  ["dash", "prod", "mov", "buy", "cash", "cli", "sit", "ana", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
+  ["dash", "prod", "mov", "buy", "cash", "cli", "sit", "ana", "todo", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
 }));
 
 function resetProdForm() {
+  document.getElementById("pPack").value = "";
+  document.getElementById("pComp").value = "";
   document.getElementById("pMinPct").value = "";
   document.getElementById("pTitle").textContent = "Ajouter un produit";
   ["pId", "pName"].forEach(id => document.getElementById(id).value = "");
@@ -604,11 +629,15 @@ document.getElementById("pSave").addEventListener("click", () => {
     min: parseFloat(document.getElementById("pMin").value) || 0,
     buy: parseFloat(document.getElementById("pBuy").value) || 0,
     sell: parseFloat(document.getElementById("pSell").value) || 0,
-    minPct: document.getElementById("pMinPct").value === "" ? null : parseFloat(document.getElementById("pMinPct").value)
+    minPct: document.getElementById("pMinPct").value === "" ? null : parseFloat(document.getElementById("pMinPct").value),
+    pack: parseFloat(document.getElementById("pPack").value) || 0,
+    comp: parseFloat(document.getElementById("pComp").value) || 0,
+    priceBuyRef: parseFloat(document.getElementById("pBuy").value) || 0
   };
   if (data.minPct == null) return alert("Mets la marge minimale de ce produit (%).");
-  if (data.sell > 0 && data.buy > 0 && data.sell < floorPrice({ buy: data.buy, minPct: data.minPct }) - 0.005)
-    return alert("Prix de vente sous la marge minimale de ce produit : minimum " + fmt(floorPrice({ buy: data.buy, minPct: data.minPct })) + ".");
+  const minRule = minAllowed(data.buy, data.pack, data.minPct);
+  if (!(data.sell > 0)) return alert("Mets le prix de vente (ou accepte la suggestion).");
+  if (data.sell < minRule - 0.005) return alert("Prix refusé : " + fmt(data.sell) + " est sous le minimum autorisé " + fmt(minRule) + ".");
   const id = document.getElementById("pId").value;
   if (id) { const p0 = prodById(id); Object.assign(p0, data); touch(p0); }
   else D.products.push({ id: uid(), ...data });
@@ -627,6 +656,8 @@ document.getElementById("prodList").addEventListener("click", e => {
     document.getElementById("pBuy").value = p.buy;
     document.getElementById("pSell").value = p.sell;
     document.getElementById("pMinPct").value = p.minPct ?? "";
+    document.getElementById("pPack").value = p.pack ?? "";
+    document.getElementById("pComp").value = p.comp ?? "";
     updateProdHint();
     document.querySelector('.tab[data-tab="prod"]').click();
     window.scrollTo(0, 0);
@@ -828,8 +859,12 @@ function cartLines() {
     const p = prodById(l.productId) || { sell: 1, buy: 0, unit: "", stock: 0, name: l.name };
     const share = t.subtotal > 0 ? l.amount / t.subtotal : 0;
     const net = r2(l.amount - t.disc * share);
-    const qty = r2(l.amount / (p.sell || 1));
-    const discLine = r2(l.amount - net);
+    const weighed = (p.unit || "kg") === "kg";
+    let qty;
+    if (weighed) qty = r2(l.amount / (p.sell || 1));
+    else qty = Math.max(1, Math.round(l.amount / (p.sell || 1)));
+    const listValue = weighed ? l.amount : r2(qty * (p.sell || 0));
+    const discLine = r2(listValue - net);
     const eff = qty > 0 ? net / qty : 0;
     const profit = r2(net - qty * (p.buy || 0));
     const warn = (p.buy || 0) > 0 && eff < floorPrice(p) - 0.005;
@@ -840,14 +875,19 @@ function renderCart() {
   const lines = cartLines();
   document.getElementById("cartList").innerHTML = lines.length ? lines.map((l, i) => `
     <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(l.name)}</div>
-    <div class="meta">${num(l.qty)} ${esc(l.p.unit || "")} · payé ${fmt(l.amount)}${l.discLine ? " · remise " + fmt(l.discLine) : ""} · bénéfice ${fmt(l.profit)}</div>
+    <div class="meta">${num(l.qty)} ${esc(l.p.unit || "")} · payé ${fmt(l.amount)}${l.discLine ? " · remise " + fmt(l.discLine) : ""}${(l.p.unit || "kg") !== "kg" ? " · prix unitaire " + fmt(l.p.sell) : ""} · bénéfice ${fmt(l.profit)}</div>
     ${l.warn ? `<div class="out">⚠ sous la marge minimale (${pctTxt(l.p)})</div>` : ""}${minPctOf(l.p) == null ? `<div class="out">⚠ marge non définie pour ce produit</div>` : ""}</div>
     <div style="text-align:right"><div class="qty in">${fmt(l.net)}</div><button class="small danger" data-rm="${i}">×</button></div></div>`).join("")
     : `<div class="empty">Aucun produit dans la facture</div>`;
   const t = invoiceTotals();
   const profit = lines.reduce((a, l) => a + l.profit, 0);
+  const creditMode = document.getElementById("sPay").value === "credit";
+  const paidNow = creditMode ? (parseFloat(document.getElementById("sPaidNow").value) || 0) : 0;
+  const rest = r2(t.total - paidNow);
   document.getElementById("invTotal").innerHTML = lines.length
-    ? `<strong>Total à payer : ${fmt(t.total)}</strong>${t.disc ? ` <span class="meta">(remise ${fmt(t.disc)})</span>` : ""} · <span class="${profit >= 0 ? "in" : "out"}">bénéfice ${fmt(profit)}</span>` : "";
+    ? `<strong>Total à payer : ${fmt(t.total)}</strong>${t.disc ? ` <span class="meta">(remise ${fmt(t.disc)})</span>` : ""} · <span class="${profit >= 0 ? "in" : "out"}">bénéfice ${fmt(profit)}</span>` +
+      (creditMode ? `<div>Payé maintenant : ${fmt(paidNow)} · <strong class="out">reste en dette : ${fmt(rest)}</strong></div>` : "")
+    : "";
   const short = lines.filter(l => l.qty > l.p.stock).map(l => l.name);
   const pv = document.getElementById("sPreview");
   pv.textContent = short.length ? "⚠ Stock insuffisant : " + short.join(", ") : "";
@@ -872,6 +912,8 @@ function resetSale() {
   sSel = null; cart = [];
   ["sSearch", "sValue", "sNote", "sDiscount", "sCust"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("sPay").value = "cash";
+  document.getElementById("sPaidNow").value = "";
+  document.getElementById("sPaidField").style.display = "none";
   document.getElementById("sSug").innerHTML = "";
   renderCart();
 }
@@ -894,12 +936,23 @@ document.getElementById("cartList").addEventListener("click", e => {
   if (i !== undefined) { cart.splice(parseInt(i, 10), 1); renderCart(); }
 });
 document.getElementById("sCancel").addEventListener("click", resetSale);
+function togglePaidField() {
+  const credit = document.getElementById("sPay").value === "credit";
+  document.getElementById("sPaidField").style.display = credit ? "" : "none";
+  if (!credit) document.getElementById("sPaidNow").value = "";
+  renderCart();
+}
+document.getElementById("sPay").addEventListener("change", togglePaidField);
+document.getElementById("sPaidNow").addEventListener("input", renderCart);
 document.getElementById("sSave").addEventListener("click", () => {
   if (!cart.length) return alert("Ajoute au moins un produit à la facture.");
   const isCredit = document.getElementById("sPay").value === "credit";
   const custName = document.getElementById("sCust").value.trim();
   if (isCredit && !custName) return alert("Mets le nom du client pour une vente à crédit.");
   const lines = cartLines();
+  const totalNet = r2(lines.reduce((a, l) => a + l.net, 0));
+  const paidNow = isCredit ? (parseFloat(document.getElementById("sPaidNow").value) || 0) : 0;
+  if (paidNow < 0 || paidNow > totalNet + 0.005) return alert("Le montant payé maintenant doit être entre 0 et " + fmt(totalNet) + ".");
   const date = today();
   const note = document.getElementById("sNote").value.trim();
   const cust = isCredit ? findOrCreateCustomer(custName) : null;
@@ -917,6 +970,7 @@ document.getElementById("sSave").addEventListener("click", () => {
   });
   const total = r2(lines.reduce((a, l) => a + l.net, 0));
   const warnCount = lines.filter(l => l.warn).length;
+  if (cust && paidNow > 0) cust.entries.push({ id: uid(), date, amount: paidNow, type: "payment", desc: "Acompte sur facture" });
   resetSale();
   renderAll();
   const msg = document.getElementById("sPreview");
@@ -1560,33 +1614,61 @@ document.getElementById("xlPwSave").addEventListener("click", () => {
 document.getElementById("xlsxImpBtn").addEventListener("click", () => document.getElementById("xlsxFile").click());
 document.getElementById("xlsxFile").addEventListener("change", importXlsx);
 
-/* ===== Prix minimum par produit ===== */
-function suggestFloor(buy, minPct) {
-  if (minPct === "" || minPct == null) return 0;
-  return Math.ceil((buy || 0) * (1 + Number(minPct) / 100) / 10) * 10;
+/* ===== Tarification : règles fixes (affichées, non modifiables) ===== */
+const PRICE_RULES = { loss: 5, absMin: 25, target: 45, round: 50 };
+function roundUp50(x) { return Math.ceil(x / PRICE_RULES.round) * PRICE_RULES.round; }
+function fullCost(buy, pack) { return ((buy || 0) + (pack || 0)) * (1 + PRICE_RULES.loss / 100); }
+function absMinPrice(buy, pack) { return roundUp50(fullCost(buy, pack) / (1 - PRICE_RULES.absMin / 100)); }
+function targetPrice(buy, pack) { return roundUp50(fullCost(buy, pack) / (1 - PRICE_RULES.target / 100)); }
+function minAllowed(buy, pack, minPct) {
+  const abs = absMinPrice(buy, pack);
+  const prod = minPct == null || minPct === "" ? 0 : (buy || 0) * (1 + Number(minPct) / 100);
+  return Math.max(abs, roundUp50(prod));
 }
+function suggestPrice(buy, pack, comp, minP, tgt) {
+  if (!comp) return { price: tgt, why: "Pas de concurrent : prix cible." };
+  if (comp < minP) return { price: minP, why: "Le concurrent est sous le minimum : on garde le minimum (ne concurrence pas sur le prix, joue sur le volume ou la qualité)." };
+  if (comp <= tgt) return { price: comp, why: "Le concurrent est entre le minimum et la cible : on aligne son prix." };
+  return { price: tgt, why: "Le concurrent est plus cher que la cible : on garde la cible." };
+}
+function suggestFloor(buy, minPct) { return 0; }
 function sellStatus(p) {
+  if (p.priceBuyRef != null && Number(p.priceBuyRef) !== Number(p.buy)) return { cls: "out", txt: "⚠ Le prix d'achat a changé : revois le prix de vente." };
   if (!(p.buy > 0)) return { cls: "", txt: "Prix d'achat manquant." };
-  const f = suggestFloor(p.buy, p.minPct);
-  if (!(p.sell > 0)) return { cls: "out", txt: "⚠ Prix de vente non fixé. Minimum : " + fmt(f) + " (" + pctTxt(p) + ")." };
-  if (p.sell < floorPrice(p) - 0.005) return { cls: "out", txt: "✖ Sous la marge minimale (" + pctTxt(p) + ") : vendre au minimum " + fmt(f) + "." };
-  return { cls: "in", txt: "✔ Marge conforme (min " + pctTxt(p) + ") · prix minimum " + fmt(f) };
+  const minP = minAllowed(p.buy, p.pack, p.minPct);
+  if (!(p.sell > 0)) return { cls: "out", txt: "⚠ Prix de vente non fixé. Minimum : " + fmt(minP) + "." };
+  if (p.sell < minP - 0.005) return { cls: "out", txt: "✖ Sous le minimum : " + fmt(minP) + "." };
+  return { cls: "in", txt: "✔ Prix accepté (minimum " + fmt(minP) + ")" };
+}
+function pricingFromForm() {
+  const buy = parseFloat(document.getElementById("pBuy").value) || 0;
+  const pack = parseFloat(document.getElementById("pPack").value) || 0;
+  const comp = parseFloat(document.getElementById("pComp").value) || 0;
+  const mp = document.getElementById("pMinPct").value;
+  const minP = minAllowed(buy, pack, mp);
+  const tgt = targetPrice(buy, pack);
+  const sug = suggestPrice(buy, pack, comp, minP, tgt);
+  return { buy, pack, comp, minP, tgt, sug, cost: fullCost(buy, pack), sell: parseFloat(document.getElementById("pSell").value) || 0 };
 }
 function updateProdHint() {
-  const buy = parseFloat(document.getElementById("pBuy").value) || 0;
-  const mp = document.getElementById("pMinPct").value;
   const el = document.getElementById("pHint");
-  if (!buy) { el.textContent = "Entre le prix d'achat pour voir le prix minimum."; return; }
-  if (mp === "" || mp == null) { el.innerHTML = "<div class=\"out\">⚠ Mets la marge minimale de ce produit (%).</div>"; return; }
-  const m = Number(mp);
-  const sell = parseFloat(document.getElementById("pSell").value) || 0;
-  const st = sell <= 0 ? "⚠ Prix de vente non fixé." : sell < buy * (1 + m / 100) - 0.005 ? "✖ Sous la marge minimale." : "✔ Prix conforme.";
-  el.innerHTML = `<div><strong>Prix minimum (marge ${m} %) : ${fmt(suggestFloor(buy, mp))}</strong></div><div>${st}</div>`;
+  const x = pricingFromForm();
+  if (!x.buy) { el.textContent = "Entre le prix d'achat pour voir la tarification."; return; }
+  const st = x.sell <= 0 ? "⚠ Mets un prix de vente ou accepte la suggestion."
+    : x.sell < x.minP - 0.005 ? `✖ Refusé : ${fmt(x.sell)} est sous le minimum ${fmt(x.minP)}.`
+    : `✔ Prix accepté (${fmt(x.sell)}).`;
+  el.innerHTML = `<div class="meta">Règles fixes : perte ${PRICE_RULES.loss} % · marge minimale absolue ${PRICE_RULES.absMin} % · marge cible ${PRICE_RULES.target} % · arrondi ${PRICE_RULES.round} DA</div>` +
+    `<div>Coût complet : <strong>${fmt(x.cost)}</strong></div>` +
+    `<div>Minimum autorisé : <strong>${fmt(x.minP)}</strong> · Cible : ${fmt(x.tgt)}</div>` +
+    `<div>Suggestion : <strong>${fmt(x.sug.price)}</strong><br><span class="meta">${esc(x.sug.why)}</span></div>` +
+    `<div>${st}</div>`;
 }
-["pBuy", "pSell", "pMinPct"].forEach(id => document.getElementById(id).addEventListener("input", updateProdHint));
+["pBuy", "pSell", "pMinPct", "pPack", "pComp"].forEach(id => document.getElementById(id).addEventListener("input", updateProdHint));
 document.getElementById("pUseSug").addEventListener("click", () => {
-  const buy = parseFloat(document.getElementById("pBuy").value) || 0;
-  if (buy) { document.getElementById("pSell").value = suggestFloor(buy, document.getElementById("pMinPct").value); updateProdHint(); }
+  const x = pricingFromForm();
+  if (!x.buy) return alert("Entre le prix d'achat d'abord.");
+  document.getElementById("pSell").value = x.sug.price;
+  updateProdHint();
 });
 
 /* ===== Dernière ouverture ===== */
@@ -1760,14 +1842,33 @@ document.getElementById("cDebt").addEventListener("click", () => customerOp("deb
 document.getElementById("cPay").addEventListener("click", () => customerOp("payment"));
 
 /* ===== Recherche dans la liste des produits ===== */
+function lastMoveDate(p) {
+  let d = "";
+  D.moves.forEach(m => { if (m.productId === p.id && m.date && m.date > d) d = m.date; });
+  D.sales.forEach(s => { if (s.productId === p.id && s.date && s.date > d) d = s.date; });
+  return d;
+}
 function productsForList() {
   const q = normTxt(document.getElementById("pListSearch") ? document.getElementById("pListSearch").value : "");
-  const list = q ? D.products.filter(p => normTxt(p.name).includes(q)) : D.products;
+  const f = document.getElementById("pFilter") ? document.getElementById("pFilter").value : "all";
+  const sortBy = document.getElementById("pSort") ? document.getElementById("pSort").value : "default";
+  let list = q ? D.products.filter(p => normTxt(p.name).includes(q)) : D.products.slice();
+  if (f === "needed") list = list.filter(p => p.stock <= p.min);
+  if (f === "out") list = list.filter(p => p.stock <= 0);
+  if (f === "nomargin") list = list.filter(p => minPctOf(p) == null);
+  if (f === "noprice") list = list.filter(p => !(p.sell > 0));
+  const margin = p => (p.buy > 0 ? (p.sell - p.buy) / p.buy * 100 : -Infinity);
+  if (sortBy === "margin_desc") list.sort((a, b) => margin(b) - margin(a));
+  if (sortBy === "margin_asc") list.sort((a, b) => margin(a) - margin(b));
+  if (sortBy === "qty_desc") list.sort((a, b) => b.stock - a.stock);
+  if (sortBy === "qty_asc") list.sort((a, b) => a.stock - b.stock);
+  if (sortBy === "old") list.sort((a, b) => lastMoveDate(a).localeCompare(lastMoveDate(b)));
   const cnt = document.getElementById("pListCount");
   if (cnt) cnt.textContent = q ? list.length + " résultat(s) sur " + D.products.length : D.products.length + " produit(s)";
   return list;
 }
 document.getElementById("pListSearch").addEventListener("input", renderProducts);
+["pSort", "pFilter"].forEach(id => document.getElementById(id).addEventListener("change", renderProducts));
 
 /* ===== Analyse et suivi ===== */
 const pad2 = n => String(n).padStart(2, "0");
@@ -1966,6 +2067,59 @@ document.getElementById("cdGo").addEventListener("click", () => {
   potPreview();
   alert("Transfert effectué : " + plan.lines.length + " format(s), " + num(plan.totalKg) + " kg utilisés.");
 });
+
+/* ===== Liste d'achat ===== */
+const WISH_STATUS = { todo: "À chercher", found: "Trouvé", bought: "Acheté" };
+const WISH_NEXT = { todo: "found", found: "bought", bought: "todo" };
+function renderWish() {
+  if (!document.getElementById("wList")) return;
+  if (!D.wish) D.wish = [];
+  const f = document.getElementById("wFilter").value;
+  const list = D.wish.filter(w => f === "all" || w.status === f);
+  const counts = { todo: 0, found: 0, bought: 0 };
+  D.wish.forEach(w => { counts[w.status] = (counts[w.status] || 0) + 1; });
+  document.getElementById("wCount").textContent = `À chercher : ${counts.todo} · Trouvé : ${counts.found} · Acheté : ${counts.bought}`;
+  document.getElementById("wList").innerHTML = list.length ? list.map(w => `
+    <div class="item" style="padding:8px 0"><div style="flex:1"><div class="name">${esc(w.name)}</div>
+    <div class="meta">${w.qty ? num(w.qty) + " " + esc(w.unit || "") : ""}${w.price ? " · max " + fmt(w.price) : ""}${w.where ? " · " + esc(w.where) : ""}</div>
+    ${w.note ? `<div class="meta">${esc(w.note)}</div>` : ""}
+    <div class="meta">ajouté le ${esc(w.date)}</div></div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+      <button class="small ${w.status === "bought" ? "ghost" : ""}" data-wstat="${w.id}">${WISH_STATUS[w.status]}</button>
+      <button class="small danger" data-wdel="${w.id}">Supprimer</button>
+    </div></div>`).join("")
+    : `<div class="empty">Liste vide</div>`;
+}
+document.getElementById("wAdd").addEventListener("click", () => {
+  const name = document.getElementById("wName").value.trim();
+  if (!name) return alert("Mets le nom du produit.");
+  D.wish.push({
+    id: uid(), name,
+    qty: parseFloat(document.getElementById("wQty").value) || 0,
+    unit: document.getElementById("wUnit").value,
+    price: parseFloat(document.getElementById("wPrice").value) || 0,
+    where: document.getElementById("wWhere").value.trim(),
+    note: document.getElementById("wNote").value.trim(),
+    status: "todo", date: today()
+  });
+  ["wName", "wQty", "wPrice", "wWhere", "wNote"].forEach(id => document.getElementById(id).value = "");
+  renderAll();
+});
+document.getElementById("wFilter").addEventListener("change", renderWish);
+document.getElementById("wList").addEventListener("click", e => {
+  const t = e.target;
+  if (t.dataset.wstat) {
+    const w = D.wish.find(x => x.id === t.dataset.wstat);
+    if (w) { w.status = WISH_NEXT[w.status]; renderAll(); }
+    return;
+  }
+  if (t.dataset.wdel) {
+    if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "Confirmer ?"; return; }
+    D.wish = D.wish.filter(x => x.id !== t.dataset.wdel);
+    renderAll();
+  }
+});
+
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
