@@ -223,12 +223,14 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <div class="field"><label for="pBuy">Prix d'achat (DA)</label><input type="number" id="pBuy" min="0" step="10" value="0"></div>
       <div class="field"><label for="pSell">Prix de vente (DA)</label><input type="number" id="pSell" min="0" step="10" value="0"></div>
     </div>
-    <div class="row"><div class="field"><label for="pPack">Emballage par unité (DA)</label><input type="number" id="pPack" min="0" step="1"></div><div class="field"><label for="pComp">Prix du concurrent (DA, facultatif)</label><input type="number" id="pComp" min="0" step="10"></div></div>
+    <div style="display:none"><input type="number" id="pPack"><input type="number" id="pComp"></div>
     <div class="row"><div class="field"><label for="pMinPct">Marge minimale de ce produit (%) : obligatoire</label><input type="number" id="pMinPct" min="0" step="1"></div></div>
     <div class="card" style="padding:10px;margin:0 0 10px">
       <div id="pHint" class="label"></div>
       <div class="row" style="margin-top:6px"><button class="small" id="pUseSug">Accepter le prix suggéré</button></div>
     </div>
+    <div class="row"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pExc"> Exception : accepter ce prix malgré la règle</label></div>
+    <div class="row"><input type="text" id="pExcWhy" placeholder="Raison de l'exception (ex : produit d'appel)"></div>
     <div class="row"><button id="pSave">Enregistrer</button><button class="ghost" id="pCancel">Annuler</button></div>
   </div>
   <div class="card"><h2>Liste</h2><input type="text" id="pListSearch" placeholder="Chercher un produit (ex : سدر، زيت...)" autocomplete="off" style="width:100%;margin-bottom:8px"><div class="row" style="margin:0 0 8px"><div class="field"><label for="pSort">Trier par</label><select id="pSort"><option value="default">Ordre d'ajout</option><option value="margin_desc">Marge : la plus haute</option><option value="margin_asc">Marge : la plus basse</option><option value="qty_desc">Quantité : la plus grande</option><option value="qty_asc">Quantité : la plus petite</option><option value="old">Dernier mouvement : le plus ancien</option></select></div>
@@ -279,7 +281,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <div class="field"><label for="bDate">Date</label><input type="date" id="bDate"></div>
     </div>
     <div class="row">
-      <div class="field"><label for="bProd">Produit</label><select id="bProd"></select></div>
+      <div class="field" style="position:relative"><label for="bSearch">Produit (tape 1, 2 ou 3 lettres)</label><input type="text" id="bSearch" autocomplete="off" placeholder="ex : زبدة، زيت..."><div id="bSug" class="sug"></div></div>
     </div>
     <div class="row">
       <div class="field"><label for="bQty">Quantité</label><input type="number" id="bQty" min="0" step="0.01"></div>
@@ -287,6 +289,8 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     </div>
     <div class="row"><button class="ghost" id="bAdd">Ajouter la ligne</button></div>
     <div id="bLines" style="margin-top:8px"></div>
+    <div class="row"><div class="field"><label for="bPaid">Montant payé maintenant (DA)</label><input type="number" id="bPaid" min="0" step="10" placeholder="0"></div></div>
+    <div class="preview" id="bPayInfo"></div>
     <div class="row"><input type="text" id="bNote" placeholder="Note (n° de facture...)"></div>
     <div class="row">
       <div class="field"><label for="bPhoto">Photo du bon (caméra)</label><input type="file" id="bPhoto" accept="image/*" capture="environment"></div>
@@ -612,7 +616,6 @@ function renderProducts() {
   ).join("") || `<div class="empty">Aucun produit</div>`;
   const opts = D.products.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
   document.getElementById("mProd").innerHTML = opts;
-  document.getElementById("bProd").innerHTML = opts;
   document.getElementById("cdBulk").innerHTML = D.products.filter(p => p.unit === "kg").map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
 }
 
@@ -637,6 +640,8 @@ document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () =>
 }));
 
 function resetProdForm() {
+  document.getElementById("pExc").checked = false;
+  document.getElementById("pExcWhy").value = "";
   document.getElementById("pPack").value = "";
   document.getElementById("pComp").value = "";
   document.getElementById("pMinPct").value = "";
@@ -666,7 +671,12 @@ document.getElementById("pSave").addEventListener("click", () => {
   if (data.minPct == null) return alert("Mets la marge minimale de ce produit (%).");
   const minRule = minAllowed(data.buy, data.pack, data.minPct);
   if (!(data.sell > 0)) return alert("Mets le prix de vente (ou accepte la suggestion).");
-  if (data.sell < minRule - 0.005) return alert("Prix refusé : " + fmt(data.sell) + " est sous le minimum autorisé " + fmt(minRule) + ".");
+  data.exception = false; data.excReason = "";
+  if (data.sell < minRule - 0.005) {
+    if (!document.getElementById("pExc").checked) return alert("Note : ce prix (" + fmt(data.sell) + ") ne respecte pas la règle (minimum " + fmt(minRule) + "). Coche « Exception » et écris la raison pour enregistrer quand même.");
+    data.exception = true;
+    data.excReason = document.getElementById("pExcWhy").value.trim() || "sans raison";
+  }
   const id = document.getElementById("pId").value;
   if (id) { const p0 = prodById(id); Object.assign(p0, data); touch(p0); }
   else D.products.push({ id: uid(), ...data });
@@ -687,6 +697,8 @@ document.getElementById("prodList").addEventListener("click", e => {
     document.getElementById("pMinPct").value = p.minPct ?? "";
     document.getElementById("pPack").value = p.pack ?? "";
     document.getElementById("pComp").value = p.comp ?? "";
+    document.getElementById("pExc").checked = !!p.exception;
+    document.getElementById("pExcWhy").value = p.excReason || "";
     updateProdHint();
     document.querySelector('.tab[data-tab="prod"]').click();
     window.scrollTo(0, 0);
@@ -740,16 +752,30 @@ function supplierMatch(list, name) {
   const t = name.trim().toLowerCase();
   return list.find(x => { const n = String(x.name).toLowerCase(); return n.includes(t) || t.includes(n.replace(/\s*\(.*\)\s*/, "").trim()); });
 }
-function addDebtForReceipt(supplier, total, desc, date) {
+function addDebtForReceipt(supplier, total, desc, date, paid) {
   const list = debtList();
   let s = supplierMatch(list, supplier);
   if (!s) { s = { id: "s" + uid(), name: supplier.trim(), note: "", dueDay: 10, terms: 30, freq: "monthly", debts: [], payments: [] }; list.push(s); }
   const did = "d" + uid();
   s.debts.push({ id: did, date, amount: total, desc });
+  let pid = null;
+  if (paid > 0) { pid = "p" + uid(); s.payments.push({ id: pid, date, amount: paid, note: "Payé à la réception du bon" }); }
   try { localStorage.setItem(DEBT_KEY, JSON.stringify(list)); } catch (e) {}
-  return { sid: s.id, did };
+  return { sid: s.id, did, pid };
 }
+function renderBuyPay() {
+  const el = document.getElementById("bPayInfo");
+  if (!el) return;
+  const total = r2(bLines.reduce((a, l) => a + l.qty * l.price, 0));
+  const paid = parseFloat(document.getElementById("bPaid").value) || 0;
+  if (!bLines.length) { el.textContent = ""; return; }
+  if (paid < total) el.innerHTML = `Total : <strong>${fmt(total)}</strong> · payé ${fmt(paid)} · <strong class="out">reste ajouté aux dettes : ${fmt(total - paid)}</strong>`;
+  else if (paid > total) el.innerHTML = `Total : <strong>${fmt(total)}</strong> · payé ${fmt(paid)} · <strong class="out">excédent de ${fmt(paid - total)} sorti de la caisse aujourd'hui</strong>`;
+  else el.innerHTML = `Total : <strong>${fmt(total)}</strong> · payé en totalité ✔`;
+}
+document.getElementById("bPaid").addEventListener("input", renderBuyPay);
 function renderBuyForm() {
+  renderBuyPay();
   document.getElementById("bLines").innerHTML = bLines.map((l, i) => `
     <div class="item"><div><div class="name">${esc(l.name)}</div><div class="meta">${num(l.qty)} × ${fmt(l.price)}</div></div>
     <div style="text-align:right"><div class="qty">${fmt(l.qty * l.price)}</div><button class="small danger" data-rm="${i}">×</button></div></div>`).join("")
@@ -760,11 +786,12 @@ function renderBuyForm() {
   datalist.innerHTML = debtList().map(s => `<option value="${esc(s.name)}">`).join("");
 }
 document.getElementById("bAdd").addEventListener("click", () => {
-  const p = prodById(document.getElementById("bProd").value);
+  const p = bSel;
   const qty = parseFloat(document.getElementById("bQty").value);
   const price = parseFloat(document.getElementById("bPrice").value) || 0;
   if (!p || !qty || qty <= 0) return alert("Choisis un produit et une quantité.");
   bLines.push({ productId: p.id, name: p.name, unit: p.unit, qty, price });
+  bSel = null; document.getElementById("bSearch").value = ""; document.getElementById("bSug").innerHTML = "";
   document.getElementById("bQty").value = "";
   document.getElementById("bPrice").value = "";
   renderBuyForm();
@@ -794,7 +821,8 @@ document.getElementById("bSave").addEventListener("click", () => {
   const date = document.getElementById("bDate").value || today();
   if (!supplier) return alert("Mets le nom du fournisseur.");
   if (!bLines.length) return alert("Ajoute au moins une ligne.");
-  const total = bLines.reduce((a, l) => a + l.qty * l.price, 0);
+  const total = r2(bLines.reduce((a, l) => a + l.qty * l.price, 0));
+  const paid = Math.max(0, parseFloat(document.getElementById("bPaid").value) || 0);
   const note = document.getElementById("bNote").value.trim();
   const rid = uid();
   bLines.forEach(l => {
@@ -806,9 +834,10 @@ document.getElementById("bSave").addEventListener("click", () => {
     D.moves.push({ id: uid(), productId: p.id, type: "in", qty: l.qty, date, note: "Bon : " + supplier + (note ? " · " + note : ""), receiptId: rid });
   });
   D.receipts.push({ id: rid, date, supplier, note, total, photo: bPhotoData,
-    debtRef: addDebtForReceipt(supplier, total, "Bon d'achat " + date + (note ? " · " + note : ""), date),
+    paid, debtRef: addDebtForReceipt(supplier, total, "Bon d'achat " + date + (note ? " · " + note : ""), date, paid),
     lines: bLines.map(l => ({ productId: l.productId, name: l.name, qty: l.qty, price: l.price })) });
   bLines = []; bPhotoData = "";
+  document.getElementById("bPaid").value = "";
   document.getElementById("bSup").value = ""; document.getElementById("bNote").value = "";
   document.getElementById("bPhoto").value = ""; document.getElementById("bPreview").innerHTML = "";
   renderAll(); renderBuyForm();
@@ -1649,25 +1678,14 @@ document.getElementById("xlsxImpBtn").addEventListener("click", () => document.g
 document.getElementById("xlsxFile").addEventListener("change", importXlsx);
 
 /* ===== Tarification : règles fixes (affichées, non modifiables) ===== */
-const PRICE_RULES = { loss: 5, absMin: 25, target: 45, round: 50 };
-function roundUp50(x) { return Math.ceil(x / PRICE_RULES.round) * PRICE_RULES.round; }
-function fullCost(buy, pack) { return ((buy || 0) + (pack || 0)) * (1 + PRICE_RULES.loss / 100); }
-function absMinPrice(buy, pack) { return roundUp50(fullCost(buy, pack) / (1 - PRICE_RULES.absMin / 100)); }
-function targetPrice(buy, pack) { return roundUp50(fullCost(buy, pack) / (1 - PRICE_RULES.target / 100)); }
+/* ===== Tarification : chaque produit a sa propre marge garantie (pas de règle générale) ===== */
 function minAllowed(buy, pack, minPct) {
-  const abs = absMinPrice(buy, pack);
-  const prod = minPct == null || minPct === "" ? 0 : (buy || 0) * (1 + Number(minPct) / 100);
-  return Math.max(abs, roundUp50(prod));
+  if (minPct == null || minPct === "" || !(buy > 0)) return 0;
+  return Math.ceil(buy * (1 + Number(minPct) / 100) / 10) * 10;
 }
-function suggestPrice(buy, pack, comp, minP, tgt) {
-  if (!comp) return { price: tgt, why: "Pas de concurrent : prix cible." };
-  if (comp < minP) return { price: minP, why: "Le concurrent est sous le minimum : on garde le minimum (ne concurrence pas sur le prix, joue sur le volume ou la qualité)." };
-  if (comp <= tgt) return { price: comp, why: "Le concurrent est entre le minimum et la cible : on aligne son prix." };
-  return { price: tgt, why: "Le concurrent est plus cher que la cible : on garde la cible." };
-}
-function suggestFloor(buy, minPct) { return 0; }
 function sellStatus(p) {
   if (p.priceBuyRef != null && Number(p.priceBuyRef) !== Number(p.buy)) return { cls: "out", txt: "⚠ Le prix d'achat a changé : revois le prix de vente." };
+  if (p.exception) return { cls: "out", txt: "⚠ Exception à la règle : " + (p.excReason || "sans raison") };
   if (!(p.buy > 0)) return { cls: "", txt: "Prix d'achat manquant." };
   const minP = minAllowed(p.buy, p.pack, p.minPct);
   if (!(p.sell > 0)) return { cls: "out", txt: "⚠ Prix de vente non fixé. Minimum : " + fmt(minP) + "." };
@@ -1676,26 +1694,20 @@ function sellStatus(p) {
 }
 function pricingFromForm() {
   const buy = parseFloat(document.getElementById("pBuy").value) || 0;
-  const pack = parseFloat(document.getElementById("pPack").value) || 0;
-  const comp = parseFloat(document.getElementById("pComp").value) || 0;
   const mp = document.getElementById("pMinPct").value;
-  const minP = minAllowed(buy, pack, mp);
-  const tgt = targetPrice(buy, pack);
-  const sug = suggestPrice(buy, pack, comp, minP, tgt);
-  return { buy, pack, comp, minP, tgt, sug, cost: fullCost(buy, pack), sell: parseFloat(document.getElementById("pSell").value) || 0 };
+  const minP = minAllowed(buy, 0, mp);
+  return { buy, mp, minP, sell: parseFloat(document.getElementById("pSell").value) || 0, sug: { price: minP } };
 }
 function updateProdHint() {
   const el = document.getElementById("pHint");
   const x = pricingFromForm();
-  if (!x.buy) { el.textContent = "Entre le prix d'achat pour voir la tarification."; return; }
-  const st = x.sell <= 0 ? "⚠ Mets un prix de vente ou accepte la suggestion."
-    : x.sell < x.minP - 0.005 ? `✖ Refusé : ${fmt(x.sell)} est sous le minimum ${fmt(x.minP)}.`
-    : `✔ Prix accepté (${fmt(x.sell)}).`;
-  el.innerHTML = `<div class="meta">Règles fixes : perte ${PRICE_RULES.loss} % · marge minimale absolue ${PRICE_RULES.absMin} % · marge cible ${PRICE_RULES.target} % · arrondi ${PRICE_RULES.round} DA</div>` +
-    `<div>Coût complet : <strong>${fmt(x.cost)}</strong></div>` +
-    `<div>Minimum autorisé : <strong>${fmt(x.minP)}</strong> · Cible : ${fmt(x.tgt)}</div>` +
-    `<div>Suggestion : <strong>${fmt(x.sug.price)}</strong><br><span class="meta">${esc(x.sug.why)}</span></div>` +
-    `<div>${st}</div>`;
+  if (!x.buy) { el.textContent = "Entre le prix d'achat."; return; }
+  if (x.mp === "") { el.innerHTML = "<div class=\"out\">⚠ Mets la marge garantie de ce produit (%).</div>"; return; }
+  const st = x.sell <= 0 ? "⚠ Mets le prix de vente."
+    : x.sell < x.minP - 0.005 ? `⚠ Ne respecte pas la marge garantie (${x.mp} %) : minimum ${fmt(x.minP)}. Coche « Exception » pour enregistrer.`
+    : `✔ Prix conforme à la marge garantie (${x.mp} %).`;
+  el.innerHTML = `<div>Prix d'achat : <strong>${fmt(x.buy)}</strong> · marge garantie : <strong>${x.mp} %</strong></div>` +
+    `<div>Prix minimum garanti : <strong>${fmt(x.minP)}</strong></div><div>${st}</div>`;
 }
 ["pBuy", "pSell", "pMinPct", "pPack", "pComp"].forEach(id => document.getElementById(id).addEventListener("input", updateProdHint));
 document.getElementById("pUseSug").addEventListener("click", () => {
@@ -2119,7 +2131,7 @@ function undoReceipt(id) {
   if (r.debtRef) {
     const list = debtList();
     const s = list.find(x => x.id === r.debtRef.sid);
-    if (s) s.debts = s.debts.filter(d => d.id !== r.debtRef.did);
+    if (s) { s.debts = s.debts.filter(d => d.id !== r.debtRef.did); if (r.debtRef.pid) s.payments = s.payments.filter(x => x.id !== r.debtRef.pid); }
     try { localStorage.setItem(DEBT_KEY, JSON.stringify(list)); } catch (e) {}
   }
   D.receipts = D.receipts.filter(x => x.id !== id);
@@ -2379,6 +2391,35 @@ document.getElementById("cadjList").addEventListener("click", e => {
   if (e.target.dataset.armed !== "1") { e.target.dataset.armed = "1"; e.target.textContent = "Confirmer ?"; return; }
   D.cashAdj = D.cashAdj.filter(x => x.id !== id);
   renderAll();
+});
+
+/* ===== Achats : choisir un produit en tapant quelques lettres ===== */
+let bSel = null;
+function renderBSug() {
+  const q = document.getElementById("bSearch").value;
+  const box = document.getElementById("bSug");
+  if (bSel && normTxt(bSel.name) === normTxt(q)) { box.innerHTML = ""; return; }
+  const m = sMatches(q);
+  box.innerHTML = m.map(p => `<div data-bpick="${p.id}">${esc(p.name)} <span class="meta">· stock ${num(p.stock)} ${esc(p.unit)}</span></div>`).join("")
+    || (q ? `<div class="meta">Aucun produit : crée-le dans Produits</div>` : "");
+}
+function pickBProduct(id) {
+  bSel = prodById(id);
+  if (!bSel) return;
+  document.getElementById("bSearch").value = bSel.name;
+  document.getElementById("bSug").innerHTML = "";
+  document.getElementById("bQty").focus();
+}
+document.getElementById("bSearch").addEventListener("input", () => {
+  if (bSel && normTxt(bSel.name) !== normTxt(document.getElementById("bSearch").value)) bSel = null;
+  renderBSug();
+});
+document.getElementById("bSearch").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); const f = document.querySelector("#bSug [data-bpick]"); if (f) pickBProduct(f.dataset.bpick); }
+});
+document.getElementById("bSug").addEventListener("click", e => {
+  const id = e.target.closest("[data-bpick]")?.dataset.bpick;
+  if (id) pickBProduct(id);
 });
 
 D = load();
