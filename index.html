@@ -232,6 +232,8 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <div class="row" style="margin-top:6px"><button class="small" id="pUseSug">Accepter le prix suggéré</button></div>
     </div>
     <div class="row"><div class="field"><label for="pBarcode">Code-barres (scanner ou taper)</label><input type="text" id="pBarcode" autocomplete="off" inputmode="numeric"></div></div>
+    <div class="row"><button class="ghost" id="pBarcodeCam">📷 Scanner avec la caméra</button><button class="ghost" id="pGen">Générer un code</button></div>
+    <div id="pCamBox"></div>
     <div class="row"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pExc"> Exception : accepter ce prix malgré la règle</label></div>
     <div class="row"><input type="text" id="pExcWhy" placeholder="Raison de l'exception (ex : produit d'appel)"></div>
     <div class="row"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pDupOk"> Je confirme : c'est un produit différent</label></div>
@@ -239,7 +241,8 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   </div>
   <div class="card"><h2>Liste</h2><input type="text" id="pListSearch" placeholder="Chercher un produit (ex : سدر، زيت...)" autocomplete="off" style="width:100%;margin-bottom:8px"><div class="row" style="margin:0 0 8px"><div class="field"><label for="pSort">Trier par</label><select id="pSort"><option value="default">Ordre d'ajout</option><option value="margin_desc">Marge : la plus haute</option><option value="margin_asc">Marge : la plus basse</option><option value="qty_desc">Quantité : la plus grande</option><option value="qty_asc">Quantité : la plus petite</option><option value="old">Dernier mouvement : le plus ancien</option></select></div>
       <div class="field"><label for="pFilter">Afficher</label><select id="pFilter"><option value="all">Tous</option><option value="needed">المطلوبة (تحت الحد الأدنى)</option><option value="out">Rupture (stock 0)</option><option value="nomargin">Sans marge définie</option><option value="noprice">Sans prix de vente</option><option value="kg">Au poids (kg)</option><option value="unit">À l'unité</option></select></div></div>
-    <div class="meta" id="pListCount" style="margin-bottom:6px"></div><div id="prodList"></div></div>
+    <div class="meta" id="pListCount" style="margin-bottom:6px"></div><div class="row" style="margin:0 0 8px"><button class="ghost small" id="pGenAll">Générer les codes manquants</button></div>
+    <div id="prodList"></div></div>
 </section>
 
 <section id="tab-mov" class="hidden">
@@ -2510,9 +2513,9 @@ function addByBarcode(code) {
 document.getElementById("sBarcode").addEventListener("keydown", e => {
   if (e.key === "Enter") { e.preventDefault(); const v = e.target.value; e.target.value = ""; addByBarcode(v); }
 });
-async function scanCamera() {
+async function scanCamera(onCode, boxId) {
   if (!("BarcodeDetector" in window) || !navigator.mediaDevices) return alert("La caméra ne marche pas sur ce navigateur. Utilise le lecteur (scanner USB) ou tape le code.");
-  const box = document.getElementById("sCamBox");
+  const box = document.getElementById(boxId || "sCamBox");
   let stream;
   try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); }
   catch (e) { return alert("Accès à la caméra refusé."); }
@@ -2528,13 +2531,44 @@ async function scanCamera() {
     if (stopped) return;
     try {
       const codes = await det.detect(v);
-      if (codes.length) { stop(); addByBarcode(codes[0].rawValue); return; }
+      if (codes.length) { stop(); onCode(codes[0].rawValue); return; }
     } catch (e) {}
     setTimeout(loop, 400);
   };
   loop();
 }
-document.getElementById("sCam").addEventListener("click", scanCamera);
+document.getElementById("sCam").addEventListener("click", () => scanCamera(addByBarcode, "sCamBox"));
+
+/* ===== Codes-barres : scanner dans Produits et générer des codes internes ===== */
+function eanCheck(base12) {
+  let s = 0;
+  for (let i = 0; i < 12; i++) s += Number(base12[i]) * (i % 2 === 0 ? 1 : 3);
+  return String((10 - (s % 10)) % 10);
+}
+function genBarcode() {
+  let code;
+  do {
+    const body = "200" + String(Math.floor(Math.random() * 1e9)).padStart(9, "0");
+    code = body + eanCheck(body);
+  } while (D.products.some(p => p.barcode === code));
+  return code;
+}
+document.getElementById("pGen").addEventListener("click", () => { document.getElementById("pBarcode").value = genBarcode(); });
+document.getElementById("pBarcodeCam").addEventListener("click", () => {
+  scanCamera(code => {
+    const used = D.products.find(p => p.barcode === code && p.id !== document.getElementById("pId").value);
+    if (used) return alert("Ce code est déjà attribué à : " + used.name);
+    document.getElementById("pBarcode").value = code;
+    document.getElementById("pCamBox").innerHTML = "";
+  }, "pCamBox");
+});
+document.getElementById("pGenAll").addEventListener("click", () => {
+  const missing = D.products.filter(p => !p.barcode);
+  if (!missing.length) return alert("Tous les produits ont déjà un code-barres.");
+  missing.forEach(p => { p.barcode = genBarcode(); touch(p); });
+  renderAll();
+  alert(missing.length + " code(s) généré(s).");
+});
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
