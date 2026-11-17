@@ -2514,14 +2514,16 @@ document.getElementById("sBarcode").addEventListener("keydown", e => {
   if (e.key === "Enter") { e.preventDefault(); const v = e.target.value; e.target.value = ""; addByBarcode(v); }
 });
 async function scanCamera(onCode, boxId) {
-  if (!("BarcodeDetector" in window) || !navigator.mediaDevices) return alert("La caméra ne marche pas sur ce navigateur. Utilise le lecteur (scanner USB) ou tape le code.");
+  if (!("BarcodeDetector" in window) || !navigator.mediaDevices) return alert("Ce navigateur ne supporte pas le scan par caméra. Mets à jour Chrome (ou utilise un scanner USB / tape le code).");
   const box = document.getElementById(boxId || "sCamBox");
   let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); }
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } }); }
   catch (e) { return alert("Accès à la caméra refusé."); }
-  box.innerHTML = '<video id="sVid" playsinline muted style="width:100%;border-radius:8px"></video><button class="small ghost" id="sCamStop" style="margin-top:6px">Arrêter</button>';
+  box.innerHTML = '<div class="label" id="sCamMsg" style="margin:6px 0;font-weight:700">Pointe la caméra vers le code-barres…</div><video id="sVid" playsinline muted autoplay style="width:100%;height:260px;object-fit:cover;background:#000;border-radius:10px"></video><button class="small ghost" id="sCamStop" style="margin-top:6px">Arrêter</button>';
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
   const v = document.getElementById("sVid");
   v.srcObject = stream;
+  try { const tr = stream.getVideoTracks()[0]; await tr.applyConstraints({ advanced: [{ focusMode: "continuous" }] }); } catch (e) {}
   await v.play();
   let stopped = false;
   const stop = () => { stopped = true; stream.getTracks().forEach(t => t.stop()); box.innerHTML = ""; };
