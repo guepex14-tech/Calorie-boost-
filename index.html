@@ -211,7 +211,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <h2 id="pTitle">Ajouter un produit</h2>
     <input type="hidden" id="pId">
     <div class="row" style="margin-top:0">
-      <div class="field"><label for="pName">Nom</label><input type="text" id="pName" placeholder="Ex : عسل سدر"></div>
+      <div class="field"><label for="pName">Nom</label><input type="text" id="pName" placeholder="Ex : عسل سدر" autocomplete="off"><div id="pSimilar" style="margin-top:4px"></div></div>
       <div class="field"><label for="pUnit">Unité</label>
         <select id="pUnit"><option value="kg">Au poids (ميزان) : kg</option><option value="unité">Unité normale</option></select></div>
     </div>
@@ -231,6 +231,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     </div>
     <div class="row"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pExc"> Exception : accepter ce prix malgré la règle</label></div>
     <div class="row"><input type="text" id="pExcWhy" placeholder="Raison de l'exception (ex : produit d'appel)"></div>
+    <div class="row"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pDupOk"> Je confirme : c'est un produit différent</label></div>
     <div class="row"><button id="pSave">Enregistrer</button><button class="ghost" id="pCancel">Annuler</button></div>
   </div>
   <div class="card"><h2>Liste</h2><input type="text" id="pListSearch" placeholder="Chercher un produit (ex : سدر، زيت...)" autocomplete="off" style="width:100%;margin-bottom:8px"><div class="row" style="margin:0 0 8px"><div class="field"><label for="pSort">Trier par</label><select id="pSort"><option value="default">Ordre d'ajout</option><option value="margin_desc">Marge : la plus haute</option><option value="margin_asc">Marge : la plus basse</option><option value="qty_desc">Quantité : la plus grande</option><option value="qty_asc">Quantité : la plus petite</option><option value="old">Dernier mouvement : le plus ancien</option></select></div>
@@ -640,6 +641,7 @@ document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () =>
 }));
 
 function resetProdForm() {
+  document.getElementById("pDupOk").checked = false;
   document.getElementById("pExc").checked = false;
   document.getElementById("pExcWhy").value = "";
   document.getElementById("pPack").value = "";
@@ -657,6 +659,9 @@ document.getElementById("pCancel").addEventListener("click", resetProdForm);
 document.getElementById("pSave").addEventListener("click", () => {
   const name = document.getElementById("pName").value.trim();
   if (!name) return alert("Mets le nom du produit.");
+  const simFound = similarProducts(name, document.getElementById("pId").value);
+  if (simFound.length && !document.getElementById("pDupOk").checked)
+    return alert("Nom identique ou très proche d'un produit existant : " + simFound.map(x => x.p.name).join(" / ") + ". Vérifie, ou coche « produit différent » pour enregistrer.");
   const data = {
     name, unit: document.getElementById("pUnit").value,
     stock: parseFloat(document.getElementById("pStock").value) || 0,
@@ -698,6 +703,7 @@ document.getElementById("prodList").addEventListener("click", e => {
     document.getElementById("pPack").value = p.pack ?? "";
     document.getElementById("pComp").value = p.comp ?? "";
     document.getElementById("pExc").checked = !!p.exception;
+    document.getElementById("pDupOk").checked = true;
     document.getElementById("pExcWhy").value = p.excReason || "";
     updateProdHint();
     document.querySelector('.tab[data-tab="prod"]').click();
@@ -2421,6 +2427,45 @@ document.getElementById("bSug").addEventListener("click", e => {
   const id = e.target.closest("[data-bpick]")?.dataset.bpick;
   if (id) pickBProduct(id);
 });
+
+/* ===== Contrôle des noms proches (produits existants) ===== */
+function normName(s) {
+  return String(s || "").replace(/[\u064B-\u0652\u0640]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي")
+    .replace(/[().,\-\/]/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+}
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+function similarProducts(name, exceptId) {
+  const n = normName(name);
+  if (!n) return [];
+  return D.products.filter(p => p.id !== exceptId).map(p => {
+    const m = normName(p.name);
+    if (!m) return { p, score: 0 };
+    if (m === n) return { p, score: 1 };
+    const lev = 1 - levenshtein(n, m) / Math.max(n.length, m.length);
+    const tn = new Set(n.split(" ")), tm = new Set(m.split(" "));
+    const common = [...tn].filter(x => tm.has(x)).length;
+    const jac = common / new Set([...tn, ...tm]).size;
+    const contains = m.includes(n) || n.includes(m) ? 0.85 : 0;
+    return { p, score: Math.max(lev, jac, contains) };
+  }).filter(x => x.score >= 0.6).sort((a, b) => b.score - a.score).slice(0, 3);
+}
+function renderSimilar() {
+  const el = document.getElementById("pSimilar");
+  if (!el) return;
+  const list = similarProducts(document.getElementById("pName").value, document.getElementById("pId").value);
+  el.innerHTML = list.length ? `<div class="out">⚠ Produit proche d'un existant : ${list.map(x => esc(x.p.name) + " (" + Math.round(x.score * 100) + " %)").join(" · ")}</div>` : "";
+}
+document.getElementById("pName").addEventListener("input", renderSimilar);
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
