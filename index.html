@@ -157,6 +157,8 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <h2 style="margin:0">Vente (facture)</h2>
       <span class="label">Aujourd'hui : <strong id="sTodayBig">0 DA</strong></span>
     </div>
+    <div class="row" style="margin-top:10px"><div class="field"><label for="sBarcode">Scanner le code-barres (ou taper le code)</label><input type="text" id="sBarcode" autocomplete="off" inputmode="numeric" placeholder="scanner ici"></div><button class="ghost" id="sCam">📷 Caméra</button></div>
+    <div id="sCamBox"></div>
     <div class="row" style="margin-top:10px">
       <div class="field"><label for="sCust">Client (facultatif, obligatoire si crédit)</label><input type="text" id="sCust" list="custNames" placeholder="nom du client" autocomplete="off"><datalist id="custNames"></datalist></div>
       <div class="field"><label for="sPay">Paiement</label><select id="sPay"><option value="cash">Comptant</option><option value="credit">Crédit (client)</option></select></div>
@@ -229,6 +231,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <div id="pHint" class="label"></div>
       <div class="row" style="margin-top:6px"><button class="small" id="pUseSug">Accepter le prix suggéré</button></div>
     </div>
+    <div class="row"><div class="field"><label for="pBarcode">Code-barres (scanner ou taper)</label><input type="text" id="pBarcode" autocomplete="off" inputmode="numeric"></div></div>
     <div class="row"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pExc"> Exception : accepter ce prix malgré la règle</label></div>
     <div class="row"><input type="text" id="pExcWhy" placeholder="Raison de l'exception (ex : produit d'appel)"></div>
     <div class="row"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pDupOk"> Je confirme : c'est un produit différent</label></div>
@@ -641,6 +644,7 @@ document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () =>
 }));
 
 function resetProdForm() {
+  document.getElementById("pBarcode").value = "";
   document.getElementById("pDupOk").checked = false;
   document.getElementById("pExc").checked = false;
   document.getElementById("pExcWhy").value = "";
@@ -659,6 +663,9 @@ document.getElementById("pCancel").addEventListener("click", resetProdForm);
 document.getElementById("pSave").addEventListener("click", () => {
   const name = document.getElementById("pName").value.trim();
   if (!name) return alert("Mets le nom du produit.");
+  const bcCode = document.getElementById("pBarcode").value.trim();
+  if (bcCode && D.products.some(p => p.barcode === bcCode && p.id !== document.getElementById("pId").value))
+    return alert("Ce code-barres est déjà attribué à un autre produit.");
   const simFound = similarProducts(name, document.getElementById("pId").value);
   if (simFound.length && !document.getElementById("pDupOk").checked)
     return alert("Nom identique ou très proche d'un produit existant : " + simFound.map(x => x.p.name).join(" / ") + ". Vérifie, ou coche « produit différent » pour enregistrer.");
@@ -671,7 +678,8 @@ document.getElementById("pSave").addEventListener("click", () => {
     minPct: document.getElementById("pMinPct").value === "" ? null : parseFloat(document.getElementById("pMinPct").value),
     pack: parseFloat(document.getElementById("pPack").value) || 0,
     comp: parseFloat(document.getElementById("pComp").value) || 0,
-    priceBuyRef: parseFloat(document.getElementById("pBuy").value) || 0
+    priceBuyRef: parseFloat(document.getElementById("pBuy").value) || 0,
+    barcode: document.getElementById("pBarcode").value.trim()
   };
   if (data.minPct == null) return alert("Mets la marge minimale de ce produit (%).");
   const minRule = minAllowed(data.buy, data.pack, data.minPct);
@@ -704,6 +712,7 @@ document.getElementById("prodList").addEventListener("click", e => {
     document.getElementById("pComp").value = p.comp ?? "";
     document.getElementById("pExc").checked = !!p.exception;
     document.getElementById("pDupOk").checked = true;
+    document.getElementById("pBarcode").value = p.barcode || "";
     document.getElementById("pExcWhy").value = p.excReason || "";
     updateProdHint();
     document.querySelector('.tab[data-tab="prod"]').click();
@@ -929,7 +938,7 @@ function cartLines() {
     const net = r2(l.amount - t.disc * share);
     const weighed = (p.unit || "kg") === "kg";
     let qty;
-    if (weighed) qty = r2(l.amount / (p.sell || 1));
+    if (weighed) qty = Math.round(l.amount / (p.sell || 1) * 10000) / 10000;
     else qty = Math.max(1, Math.round(l.amount / (p.sell || 1)));
     const listValue = weighed ? l.amount : r2(qty * (p.sell || 0));
     const discLine = r2(listValue - net);
@@ -944,7 +953,7 @@ function renderCart() {
   const lines = cartLines();
   document.getElementById("cartList").innerHTML = lines.length ? lines.map((l, i) => `
     <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(l.name)}</div>
-    <div class="meta">${num(l.qty)} ${esc(l.p.unit || "")} · payé ${fmt(l.amount)}${l.discLine ? " · remise " + fmt(l.discLine) : ""}${(l.p.unit || "kg") !== "kg" ? " · prix unitaire " + fmt(l.p.sell) : ""} · bénéfice ${fmt(l.profit)}</div>
+    <div class="meta">${l.qty < 1 ? l.qty.toFixed(3) : num(l.qty)} ${esc(l.p.unit || "")} · payé ${fmt(l.amount)}${l.discLine ? " · remise " + fmt(l.discLine) : ""}${(l.p.unit || "kg") !== "kg" ? " · prix unitaire " + fmt(l.p.sell) : ""} · bénéfice ${fmt(l.profit)}</div>
     ${l.warn ? `<div class="out">⚠ sous la marge minimale (${pctTxt(l.p)})</div>` : ""}${minPctOf(l.p) == null ? `<div class="out">⚠ marge non définie pour ce produit</div>` : ""}${l.lowUnit ? `<div class="out">⚠ Prix très bas pour une unité. Si ce produit se vend au poids, mets son unité en kg dans Produits.</div>` : ""}</div>
     <div style="text-align:right"><div class="qty in">${fmt(l.net)}</div><button class="small danger" data-rm="${i}">×</button></div></div>`).join("")
     : `<div class="empty">Aucun produit dans la facture</div>`;
@@ -957,6 +966,12 @@ function renderCart() {
     ? `<strong>Total à payer : ${fmt(t.total)}</strong>${t.disc ? ` <span class="meta">(remise ${fmt(t.disc)})</span>` : ""} · <span class="${profit >= 0 ? "in" : "out"}">bénéfice ${fmt(profit)}</span>` +
       (creditMode ? `<div>Payé maintenant : ${fmt(paidNow)} · <strong class="out">reste en dette : ${fmt(rest)}</strong></div>` : "")
     : "";
+  if (lines.length) {
+    const listTotal = r2(lines.reduce((a, l) => a + l.net + l.discLine, 0));
+    const remTotal = r2(listTotal - t.total);
+    const remPct = listTotal ? Math.round(remTotal / listTotal * 100) : 0;
+    document.getElementById("invTotal").innerHTML += `<div class="meta" style="margin-top:4px">Prix original : ${fmt(listTotal)} · remise accordée : <strong class="${remTotal > 0 ? "out" : "in"}">${fmt(remTotal)} (${remPct} %)</strong></div>`;
+  }
   const short = lines.filter(l => l.qty > l.p.stock).map(l => l.name);
   const pv = document.getElementById("sPreview");
   pv.textContent = short.length ? "⚠ Stock insuffisant : " + short.join(", ") : "";
@@ -1028,7 +1043,7 @@ document.getElementById("sSave").addEventListener("click", () => {
   const invId = uid();
   lines.forEach(l => {
     const p = l.p;
-    p.stock = Math.max(0, r2(p.stock - l.qty));
+    p.stock = Math.max(0, Math.round((p.stock - l.qty) * 10000) / 10000);
     touch(p);
     const sale = { id: uid(), ts: Date.now(), date, productId: p.id, name: p.name, qty: l.qty, unit: p.unit,
       unitPrice: p.sell, amount: l.net, discount: l.discLine, profit: l.profit, note, credit: isCredit,
@@ -1105,7 +1120,10 @@ function renderSales() {
   document.getElementById("hProfit").textContent = fmt(dayProfit);
   const all = [...D.sales].sort((a, b) => (b.ts || 0) - (a.ts || 0) || (b.date || "").localeCompare(a.date || ""));
   const allProfit = all.reduce((a, s) => a + saleProfit(s), 0);
-  document.getElementById("hSub").textContent = (day === t ? "Aujourd'hui" : day) + " · bénéfice total de toutes les ventes : " + fmt(allProfit);
+  const dayOriginal = dayList.reduce((a, s) => a + s.amount + saleDiscount(s), 0);
+  const dayDisc = dayList.reduce((a, s) => a + saleDiscount(s), 0);
+  const dayDiscPct = dayOriginal ? Math.round(dayDisc / dayOriginal * 100) : 0;
+  document.getElementById("hSub").textContent = (day === t ? "Aujourd'hui" : day) + " · prix original : " + fmt(dayOriginal) + " · remises : " + fmt(dayDisc) + " (" + dayDiscPct + " %) · bénéfice total de toutes les ventes : " + fmt(allProfit);
   document.getElementById("sList").innerHTML = all.slice(0, 200).map(s => `
     <div class="item"><div style="flex:1"><div class="name">${esc(s.name)}</div>
     <div class="meta">${esc(s.date)} · ${num(s.qty)} ${esc(s.unit)}${s.discount ? " · remise " + fmt(s.discount) : ""}${s.note ? " · " + esc(s.note) : ""}</div>
@@ -2466,6 +2484,57 @@ function renderSimilar() {
   el.innerHTML = list.length ? `<div class="out">⚠ Produit proche d'un existant : ${list.map(x => esc(x.p.name) + " (" + Math.round(x.score * 100) + " %)").join(" · ")}</div>` : "";
 }
 document.getElementById("pName").addEventListener("input", renderSimilar);
+
+/* ===== Code-barres : scanner pour vendre ===== */
+function addByBarcode(code) {
+  const c = String(code || "").trim();
+  if (!c) return;
+  const p = D.products.find(x => String(x.barcode || "") === c);
+  if (!p) return alert("Code inconnu : ajoute ce produit dans Produits avec son code-barres.");
+  if ((p.unit || "kg") === "kg") {
+    sSel = p;
+    document.getElementById("sSearch").value = p.name;
+    document.getElementById("sSug").innerHTML = "";
+    document.getElementById("sValue").focus();
+    document.getElementById("sPreview").textContent = "Produit au poids : mets le montant ou le poids.";
+    return;
+  }
+  const ex = cart.find(l => l.productId === p.id);
+  if (ex) ex.amount = r2(ex.amount + p.sell);
+  else cart.push({ productId: p.id, name: p.name, amount: r2(p.sell) });
+  renderCart();
+  const pv = document.getElementById("sPreview");
+  pv.style.color = "var(--accent)";
+  pv.textContent = "✔ Ajouté : " + p.name + " (1 unité)";
+}
+document.getElementById("sBarcode").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); const v = e.target.value; e.target.value = ""; addByBarcode(v); }
+});
+async function scanCamera() {
+  if (!("BarcodeDetector" in window) || !navigator.mediaDevices) return alert("La caméra ne marche pas sur ce navigateur. Utilise le lecteur (scanner USB) ou tape le code.");
+  const box = document.getElementById("sCamBox");
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); }
+  catch (e) { return alert("Accès à la caméra refusé."); }
+  box.innerHTML = '<video id="sVid" playsinline muted style="width:100%;border-radius:8px"></video><button class="small ghost" id="sCamStop" style="margin-top:6px">Arrêter</button>';
+  const v = document.getElementById("sVid");
+  v.srcObject = stream;
+  await v.play();
+  let stopped = false;
+  const stop = () => { stopped = true; stream.getTracks().forEach(t => t.stop()); box.innerHTML = ""; };
+  document.getElementById("sCamStop").addEventListener("click", stop);
+  const det = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "code_128", "qr_code"] });
+  const loop = async () => {
+    if (stopped) return;
+    try {
+      const codes = await det.detect(v);
+      if (codes.length) { stop(); addByBarcode(codes[0].rawValue); return; }
+    } catch (e) {}
+    setTimeout(loop, 400);
+  };
+  loop();
+}
+document.getElementById("sCam").addEventListener("click", scanCamera);
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
