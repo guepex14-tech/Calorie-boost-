@@ -940,22 +940,25 @@ function cartLines() {
     const share = t.subtotal > 0 ? l.amount / t.subtotal : 0;
     const net = r2(l.amount - t.disc * share);
     const weighed = (p.unit || "kg") === "kg";
+    const up = l.uprice > 0 ? l.uprice : (p.sell || 1);
     let qty;
-    if (weighed) qty = Math.round(l.amount / (p.sell || 1) * 10000) / 10000;
-    else qty = Math.max(1, Math.round(l.amount / (p.sell || 1)));
-    const listValue = weighed ? l.amount : r2(qty * (p.sell || 0));
+    if (weighed) qty = Math.round(l.amount / up * 10000) / 10000;
+    else qty = Math.max(1, Math.round(l.amount / up));
+    const listValue = r2(qty * (p.sell || 0));
     const discLine = r2(listValue - net);
     const eff = qty > 0 ? net / qty : 0;
     const profit = r2(net - qty * (p.buy || 0));
     const warn = (p.buy || 0) > 0 && eff < floorPrice(p) - 0.005;
     const lowUnit = !weighed && (p.sell || 0) > 0 && l.amount < (p.sell || 0) * 0.5;
-    return { productId: l.productId, name: l.name, amount: l.amount, p, qty, net, discLine, eff, profit, warn, lowUnit };
+    return { productId: l.productId, name: l.name, amount: l.amount, p, qty, net, discLine, eff, profit, warn, lowUnit, up };
   });
 }
 function renderCart() {
   const lines = cartLines();
   document.getElementById("cartList").innerHTML = lines.length ? lines.map((l, i) => `
     <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(l.name)}</div>
+    <div class="meta">prix unitaire : <input type="number" data-up="${i}" value="${l.up}" step="10" style="width:110px"> DA / ${esc(l.p.unit || "")}${l.up < (l.p.sell || 0) ? ` <span class="out">(remise ${fmt((l.p.sell || 0) - l.up)} / ${esc(l.p.unit || "")})</span>` : ""}</div>
+    <div class="meta">stock consommé : <strong>${l.qty < 1 ? l.qty.toFixed(3) : num(l.qty)} ${esc(l.p.unit || "")}</strong> · reste en stock : ${num(Math.max(0, r2((l.p.stock || 0) - l.qty)))}</div>
     <div class="meta">${l.qty < 1 ? l.qty.toFixed(3) : num(l.qty)} ${esc(l.p.unit || "")} · payé ${fmt(l.amount)}${l.discLine ? " · remise " + fmt(l.discLine) : ""}${(l.p.unit || "kg") !== "kg" ? " · prix unitaire " + fmt(l.p.sell) : ""} · bénéfice ${fmt(l.profit)}</div>
     ${l.warn ? `<div class="out">⚠ sous la marge minimale (${pctTxt(l.p)})</div>` : ""}${minPctOf(l.p) == null ? `<div class="out">⚠ marge non définie pour ce produit</div>` : ""}${l.lowUnit ? `<div class="out">⚠ Prix très bas pour une unité. Si ce produit se vend au poids, mets son unité en kg dans Produits.</div>` : ""}</div>
     <div style="text-align:right"><div class="qty in">${fmt(l.net)}</div><button class="small danger" data-rm="${i}">×</button></div></div>`).join("")
@@ -1018,6 +1021,13 @@ document.getElementById("sSug").addEventListener("click", e => {
 document.getElementById("sAddLine").addEventListener("click", addLine);
 document.getElementById("sValue").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addLine(); } });
 document.getElementById("sDiscount").addEventListener("input", renderCart);
+document.getElementById("cartList").addEventListener("change", e => {
+  const i = e.target.dataset.up;
+  if (i === undefined) return;
+  const v = parseFloat(e.target.value);
+  if (v > 0) cart[parseInt(i, 10)].uprice = v;
+  renderCart();
+});
 document.getElementById("cartList").addEventListener("click", e => {
   const i = e.target.dataset.rm;
   if (i !== undefined) { cart.splice(parseInt(i, 10), 1); renderCart(); }
@@ -1049,7 +1059,7 @@ document.getElementById("sSave").addEventListener("click", () => {
     p.stock = Math.max(0, Math.round((p.stock - l.qty) * 10000) / 10000);
     touch(p);
     const sale = { id: uid(), ts: Date.now(), date, productId: p.id, name: p.name, qty: l.qty, unit: p.unit,
-      unitPrice: p.sell, amount: l.net, discount: l.discLine, profit: l.profit, note, credit: isCredit,
+      unitPrice: l.up, amount: l.net, discount: l.discLine, profit: l.profit, note, credit: isCredit,
       customerId: cust ? cust.id : "", invoiceId: invId };
     if (cust) cust.entries.push({ id: uid(), date, amount: l.net, type: "sale", saleId: sale.id, desc: "Vente : " + p.name + " (" + l.qty + " " + p.unit + ")" });
     D.sales.push(sale);
@@ -1129,7 +1139,7 @@ function renderSales() {
   document.getElementById("hSub").textContent = (day === t ? "Aujourd'hui" : day) + " · prix original : " + fmt(dayOriginal) + " · remises : " + fmt(dayDisc) + " (" + dayDiscPct + " %) · bénéfice total de toutes les ventes : " + fmt(allProfit);
   document.getElementById("sList").innerHTML = all.slice(0, 200).map(s => `
     <div class="item"><div style="flex:1"><div class="name">${esc(s.name)}</div>
-    <div class="meta">${esc(s.date)} · ${num(s.qty)} ${esc(s.unit)}${s.discount ? " · remise " + fmt(s.discount) : ""}${s.note ? " · " + esc(s.note) : ""}</div>
+    <div class="meta">${esc(s.date)} · stock −${s.qty < 1 ? s.qty.toFixed(3) : num(s.qty)} ${esc(s.unit)}${s.discount ? " · remise " + fmt(s.discount) : ""}${s.note ? " · " + esc(s.note) : ""}</div>
     <div class="meta">bénéfice : <span class="${saleProfit(s) >= 0 ? "in" : "out"}">${fmt(saleProfit(s))}</span></div>
     <div class="actions"><button class="small ghost" data-sedit="${s.id}">Modifier</button><button class="small danger" data-sdel="${s.id}">Supprimer</button></div></div>
     <div class="qty in">${fmt(s.amount)}</div></div>`).join("") || `<div class="empty">Aucune vente</div>`;
