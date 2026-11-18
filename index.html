@@ -394,6 +394,9 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="label" style="margin-bottom:6px">Chaque fournisseur a son objectif : nombre de mois pour finir sa dette. Le programme calcule le montant à payer par mois.</div>
     <div id="anaPlan"></div>
   </div>
+  <div class="card"><h2>Bénéfice contre charges fixes</h2>
+    <div id="anaFixedCmp"></div>
+  </div>
   <div class="card"><h2>Charges fixes</h2>
     <div class="label" style="margin-bottom:6px">Total : <strong id="fxTotal"></strong></div>
     <div id="fxList"></div>
@@ -1115,9 +1118,16 @@ function shiftDay(days) {
   renderSales();
 }
 function saleProfit(s) {
-  if (s.profit != null) return s.profit;
+  // Bénéfice d'une vente = montant net encaissé − quantité × prix d'achat au moment de la vente
+  if (s.profit != null) return r2(s.profit);
   const p = prodById(s.productId);
   return r2(s.amount - s.qty * (p ? p.buy || 0 : 0));
+}
+function fixedMonthTotal() {
+  return (D.fixed || []).reduce((a, f) => a + fixedMonthly(f), 0);
+}
+function otherExpensesBetween(a, b) {
+  return D.expenses.filter(e => e.date >= a && e.date <= b && !String(e.label).startsWith("[fixe]")).reduce((x, e) => x + e.amount, 0);
 }
 function renderSales() {
   const t = today();
@@ -1994,14 +2004,40 @@ function renderAnalysis() {
   const revenue = sales.reduce((a, s) => a + s.amount, 0);
   const gross = sales.reduce((a, s) => a + saleProfit(s), 0);
   const cost = revenue - gross;
-  const exp = expensesBetween(m + "-01", monthEnd(m));
-  const net = gross - exp;
+  const fixedM = fixedMonthTotal();
+  const otherM = otherExpensesBetween(m + "-01", monthEnd(m));
+  const exp = r2(fixedM + otherM);
+  const net = r2(gross - exp);
+  {
+    const fixedDay = fixedM / 30;
+    const dayT = today();
+    const todayGross = D.sales.filter(s => s.date === dayT).reduce((a, s) => a + saleProfit(s), 0);
+    const from30b = addDaysStr(dayT, -29);
+    const gross30 = D.sales.filter(s => s.date >= from30b && s.date <= dayT).reduce((a, s) => a + saleProfit(s), 0);
+    const rev30 = D.sales.filter(s => s.date >= from30b && s.date <= dayT).reduce((a, s) => a + s.amount, 0);
+    const marginRate = revenue > 0 ? gross / revenue : 0;
+    const breakEven = marginRate > 0 ? fixedM / marginRate : 0;
+    const cover = fixedM > 0 ? Math.round(gross / fixedM * 100) : 0;
+    const okStat = (a, b) => a >= b ? `<span class="in">✔ couvert</span>` : `<span class="out">✖ pas couvert (manque ${fmt(b - a)})</span>`;
+    document.getElementById("anaFixedCmp").innerHTML = `
+      <table style="width:100%;font-size:15px;border-collapse:collapse">
+        <tr><td style="padding:4px 0">Bénéfice brut du mois</td><td style="text-align:right">${fmt(gross)}</td></tr>
+        <tr><td style="padding:4px 0">Charges fixes du mois</td><td style="text-align:right">${fmt(fixedM)}</td></tr>
+        <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">Reste après charges fixes</td><td style="text-align:right" class="${gross - fixedM >= 0 ? "in" : "out"}">${fmt(gross - fixedM)}</td></tr>
+        <tr><td style="padding:4px 0">Couverture des charges fixes</td><td style="text-align:right">${cover} %</td></tr>
+        <tr><td style="padding:4px 0">Chiffre d'affaires à atteindre pour couvrir les charges</td><td style="text-align:right">${fmt(breakEven)}</td></tr>
+      </table>
+      <div style="margin-top:8px">Aujourd'hui : bénéfice ${fmt(todayGross)} · charges fixes par jour ${fmt(fixedDay)} → ${okStat(todayGross, fixedDay)}</div>
+      <div>30 derniers jours : bénéfice moyen ${fmt(gross30 / 30)} par jour → ${okStat(gross30 / 30, fixedDay)}</div>
+      <div class="label" style="margin-top:6px">Bénéfice = montant encaissé − coût d'achat (les remises sont déjà incluses). Les charges fixes viennent de la liste ci-dessus.</div>`;
+  }
   document.getElementById("anaPnl").innerHTML = `
     <table style="width:100%;font-size:15px;border-collapse:collapse">
       <tr><td style="padding:4px 0">Chiffre d'affaires</td><td style="text-align:right">${fmt(revenue)}</td></tr>
       <tr><td style="padding:4px 0">Coût de la marchandise vendue</td><td style="text-align:right" class="out">−${fmt(cost)}</td></tr>
       <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">Bénéfice brut</td><td style="text-align:right">${fmt(gross)}</td></tr>
-      <tr><td style="padding:4px 0">Dépenses</td><td style="text-align:right" class="out">−${fmt(exp)}</td></tr>
+      <tr><td style="padding:4px 0">Charges fixes (par mois)</td><td style="text-align:right" class="out">−${fmt(fixedM)}</td></tr>
+      <tr><td style="padding:4px 0">Autres dépenses</td><td style="text-align:right" class="out">−${fmt(otherM)}</td></tr>
       <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">Bénéfice net</td><td style="text-align:right" class="${net >= 0 ? "in" : "out"}">${fmt(net)}</td></tr>
     </table>
     <div class="label" style="margin-top:6px">${sales.length} vente(s) ce mois. ${exp === 0 ? "⚠ Aucune dépense enregistrée ce mois : le bénéfice net est probablement surestimé." : ""}</div>`;
