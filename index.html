@@ -361,6 +361,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <div class="field"><label for="cliAmt">Montant (DA)</label><input type="number" id="cliAmt" min="0" step="100"></div>
       <div class="field"><label for="cDesc">Description</label><input type="text" id="cDesc" placeholder="Ex : ancienne dette, sacs de miel"></div>
     </div>
+    <div class="row"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="cLoan"> Argent sorti de la caisse (prêt au client)</label></div>
     <div class="row"><button id="cDebt">Ajouter une dette</button><button class="ghost" id="cPay">Paiement reçu</button></div>
     <div class="label" id="cBalTxt" style="margin-top:8px"></div>
     <div id="cHist" style="margin-top:8px"></div>
@@ -898,7 +899,8 @@ function cashBalance() {
   const pays = debtSuppliers().reduce((a, s) => a + since(s.payments, p => p.amount), 0);
   const custPay = (D.customers || []).reduce((a, c) => a + since(c.entries.filter(e => e.type === "payment"), e => e.amount), 0);
   const adj = (D.cashAdj || []).filter(x => x.date >= d0).reduce((a, x) => a + x.amount, 0);
-  return { balance: D.cash.balance + sales - exp - pays + custPay + adj, sales, exp, pays, adj };
+  const loans = (D.customers || []).reduce((a, c) => a + since(c.entries.filter(e => e.type === "debt" && e.loanCash), e => e.amount), 0);
+  return { balance: D.cash.balance + sales - exp - pays + custPay + adj - loans, sales, exp, pays, adj, loans };
 }
 
 let sSel = null;
@@ -1043,6 +1045,8 @@ function togglePaidField() {
   renderCart();
 }
 document.getElementById("sPay").addEventListener("change", togglePaidField);
+document.getElementById("sPay").value = "cash";
+{ const saleRow = document.getElementById("sPay").closest(".row"); if (saleRow) saleRow.style.display = "none"; }
 document.getElementById("sPaidNow").addEventListener("input", renderCart);
 document.getElementById("sSave").addEventListener("click", () => {
   if (!cart.length) return alert("Ajoute au moins un produit à la facture.");
@@ -1927,7 +1931,8 @@ function customerOp(type) {
   if (!amt || amt <= 0) return alert("Mets un montant.");
   const desc = document.getElementById("cDesc").value.trim();
   if (type === "payment") c.entries.push({ id: uid(), date: today(), amount: amt, type: "payment", desc: desc || "Paiement reçu" });
-  else c.entries.push({ id: uid(), date: today(), amount: amt, type: "debt", desc: desc || "Dette ajoutée" });
+  else c.entries.push({ id: uid(), date: today(), amount: amt, type: "debt", desc: desc || "Dette ajoutée", loanCash: document.getElementById("cLoan").checked });
+  document.getElementById("cLoan").checked = false;
   document.getElementById("cliAmt").value = "";
   document.getElementById("cDesc").value = "";
   renderAll();
