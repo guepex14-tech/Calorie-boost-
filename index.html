@@ -133,7 +133,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 <div class="sub">CALORIE BOOST · inventaire du 12 nov. 2026</div>
 
 <div class="tabs">
-  <button class="tab on" data-tab="dash">Tableau de bord</button>
+  <button class="tab on" data-tab="dash">Ventes</button>
   <button class="tab" data-tab="prod">Produits</button>
   <button class="tab" data-tab="mov">Mouvements</button>
   <button class="tab" data-tab="buy">Achats</button>
@@ -481,7 +481,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 <div class="sub">CALORIE BOOST</div>
 
 <div class="tabs">
-  <button class="dtab on" data-tab="dash">Tableau de bord</button>
+  <button class="dtab on" data-tab="dash">Ventes</button>
   <button class="dtab" data-tab="sup">Fournisseurs</button>
   <button class="dtab" data-tab="pay">Paiements mensuels</button>
   <button class="dtab" data-tab="add">Ajouter</button>
@@ -1797,7 +1797,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 15/11/2026 (ajustement de caisse)";
+  el.textContent += " · version 25/11/2026 (تنظيم أكثر)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
