@@ -148,6 +148,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 </div>
 
 <section id="tab-dash">
+  <div id="invBar" style="position:sticky;top:0;z-index:30;background:var(--bg);padding:8px 0;border-bottom:2px solid var(--accent);margin-bottom:8px"><strong>Facture :</strong> <span id="invBarTxt">Panier vide</span></div>
   <div class="card" id="remind" style="display:none;border:2px solid var(--warn)">
     <strong>⏰ Rappel : rapport du jour</strong>
     <div class="label" style="margin-top:4px">Exporte les 4 fichiers Excel et envoie-les par email.</div>
@@ -158,8 +159,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <h2 style="margin:0">Vente (facture)</h2>
       <span class="label">Aujourd'hui : <strong id="sTodayBig">0 DA</strong></span>
     </div>
-    <div class="row" style="margin-top:10px"><div class="field"><label for="sBarcode">Scanner le code-barres (ou taper le code)</label><input type="text" id="sBarcode" autocomplete="off" inputmode="numeric" placeholder="scanner ici"></div><button class="ghost" id="sCam">📷 Caméra</button></div>
-    <div id="sCamBox"></div>
+    
     <div class="row" style="margin-top:10px">
       <div class="field"><label for="sCust">Client (facultatif, obligatoire si crédit)</label><input type="text" id="sCust" list="custNames" placeholder="nom du client" autocomplete="off"><datalist id="custNames"></datalist></div>
       <div class="field"><label for="sPay">Paiement</label><select id="sPay"><option value="cash">Comptant</option><option value="credit">Crédit (client)</option></select></div>
@@ -193,7 +193,10 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <div class="card"><h2>Ventes de cette journée</h2><div id="sList"></div></div>
   <div class="card"><h2>Journées précédentes</h2><div id="hDays"></div></div>
   <div class="stats">
-    <div class="card"><div class="label">Valeur du stock (achat)</div><div class="big" id="kCost">—</div></div>
+    </section>
+
+<section id="tab-prod" class="hidden">
+  <div class="card"><div class="label">Valeur du stock (achat)</div><div class="big" id="kCost">—</div></div>
     <div class="card"><div class="label">Valeur de vente</div><div class="big" id="kSale">—</div></div>
     <div class="card"><div class="label">Produits</div><div class="big" id="kCount">—</div></div>
     <div class="card"><div class="label">Alertes</div><div class="big" id="kAlerts">—</div></div>
@@ -206,9 +209,6 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <h2>Tous les produits</h2>
     <div id="dashList"></div>
   </div>
-</section>
-
-<section id="tab-prod" class="hidden">
   
   <div class="card">
     <h2 id="pTitle">Ajouter un produit</h2>
@@ -429,13 +429,13 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 <section id="tab-plan" class="hidden">
   <div class="card">
     <h2>الربح مقابل المصاريف</h2>
-    <div class="row" style="margin-top:0"><div class="field"><label for="plDays">Période de calcul de la moyenne</label><select id="plDays"><option value="7">7 jours</option><option value="14">14 jours</option><option value="30" selected>30 jours</option></select></div></div>
+    <div class="row" style="margin-top:0"><div class="field"><label for="plFrom">Du</label><input type="date" id="plFrom"></div><div class="field"><label for="plTo">Au</label><input type="date" id="plTo"></div></div>
     <div id="plSummary"></div>
   </div>
   <div class="card">
     <h2>المصاريف (زيد، بدّل، أو احذف)</h2>
     <div class="row" style="margin-top:0"><div class="field"><label for="plName">Nom de la dépense</label><input type="text" id="plName" placeholder="ex : Loyer"></div><div class="field"><label for="plAmt">Montant (DA)</label><input type="number" id="plAmt" min="0" step="100"></div></div>
-    <div class="row"><div class="field"><label for="plMonths">Durée de paiement (mois)</label><input type="number" id="plMonths" min="1" step="1" value="1"></div></div>
+    <div class="row"><div class="field"><label for="plMonths">Durée de paiement (mois)</label><input type="number" id="plMonths" min="1" step="1" value="1"></div><div class="field"><label for="plDue">Date de paiement</label><input type="date" id="plDue"></div></div>
     <div class="row"><button id="plAdd">Ajouter</button><button class="ghost" id="plCancel">Annuler</button></div>
     <div id="plExpList" style="margin-top:8px"></div>
     <div id="plExpTotal" style="margin-top:8px"></div>
@@ -663,7 +663,7 @@ function renderMoves() {
   }).join("") || `<div class="empty">Aucun mouvement</div>`;
 }
 
-function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.fixed) D.fixed = defaultFixed(); if (!D.supTargets) D.supTargets = {}; if (!D.cashAdj) D.cashAdj = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; if (!D.plan) D.plan = { expenses: defaultPlanExpenses(), pctBuy: 50 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); renderFixed(); renderPlan(); renderCashAdj(); renderPlanTab(); save(); }
+function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.fixed) D.fixed = defaultFixed(); if (!D.supTargets) D.supTargets = {}; if (!D.cashAdj) D.cashAdj = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; if (!D.plan) D.plan = { expenses: defaultPlanExpenses(), pctBuy: 50 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); renderFixed(); renderPlan(); renderCashAdj(); renderPlanTab(); renderCart(); save(); }
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
@@ -707,7 +707,7 @@ document.getElementById("pSave").addEventListener("click", () => {
     pack: parseFloat(document.getElementById("pPack").value) || 0,
     comp: parseFloat(document.getElementById("pComp").value) || 0,
     priceBuyRef: parseFloat(document.getElementById("pBuy").value) || 0,
-    barcode: document.getElementById("pBarcode").value.trim()
+    barcode: document.getElementById("pBarcode").value.trim() || genBarcode()
   };
   if (data.minPct == null) return alert("Mets la marge minimale de ce produit (%).");
   const minRule = minAllowed(data.buy, data.pack, data.minPct);
@@ -998,6 +998,7 @@ function renderCart() {
     ? `<strong>Total à payer : ${fmt(t.total)}</strong>${t.disc ? ` <span class="meta">(remise ${fmt(t.disc)})</span>` : ""} · <span class="${profit >= 0 ? "in" : "out"}">bénéfice ${fmt(profit)}</span>` +
       (creditMode ? `<div>Payé maintenant : ${fmt(paidNow)} · <strong class="out">reste en dette : ${fmt(rest)}</strong></div>` : "")
     : "";
+  document.getElementById("invBarTxt").textContent = lines.length ? lines.length + " article(s) · Total à payer " + fmt(t.total) : "Panier vide";
   if (lines.length) {
     const listTotal = r2(lines.reduce((a, l) => a + l.net + l.discLine, 0));
     const remTotal = r2(listTotal - t.total);
@@ -2582,9 +2583,7 @@ function addByBarcode(code) {
   pv.style.color = "var(--accent)";
   pv.textContent = "✔ Ajouté : " + p.name + " (1 unité)";
 }
-document.getElementById("sBarcode").addEventListener("keydown", e => {
-  if (e.key === "Enter") { e.preventDefault(); const v = e.target.value; e.target.value = ""; addByBarcode(v); }
-});
+
 async function scanCamera(onCode, boxId) {
   if (!("BarcodeDetector" in window) || !navigator.mediaDevices) return alert("Ce navigateur ne supporte pas le scan par caméra. Mets à jour Chrome (ou utilise un scanner USB / tape le code).");
   const box = document.getElementById(boxId || "sCamBox");
@@ -2611,7 +2610,7 @@ async function scanCamera(onCode, boxId) {
   };
   loop();
 }
-document.getElementById("sCam").addEventListener("click", () => scanCamera(addByBarcode, "sCamBox"));
+
 
 /* ===== Codes-barres : scanner dans Produits et générer des codes internes ===== */
 function eanCheck(base12) {
@@ -2658,18 +2657,21 @@ function defaultPlanExpenses() {
 let plEdit = null;
 function plExpDaily(e) { return (Number(e.amount) || 0) / ((Number(e.months) || 1) * 30); }
 function plAvg() {
-  const n = parseInt(document.getElementById("plDays").value, 10) || 30;
-  const from = addDaysStr(today(), -(n - 1));
-  const list = D.sales.filter(s => s.date >= from && s.date <= today());
+  if (!document.getElementById("plFrom").value) document.getElementById("plFrom").value = addDaysStr(today(), -29);
+  if (!document.getElementById("plTo").value) document.getElementById("plTo").value = today();
+  const from = document.getElementById("plFrom").value, to = document.getElementById("plTo").value;
+  const n = Math.max(1, Math.round((new Date(to) - new Date(from)) / 86400000) + 1);
+  const list = D.sales.filter(s => s.date >= from && s.date <= to);
   const profit = list.reduce((a, s) => a + saleProfit(s), 0);
   const sales = list.reduce((a, s) => a + (s.amount || 0), 0);
-  return { n, profit: profit / n, sales: sales / n };
+  return { n, from, to, profit: profit / n, sales: sales / n, totalProfit: profit };
 }
 function plResetForm() {
   plEdit = null;
   document.getElementById("plName").value = "";
   document.getElementById("plAmt").value = "";
   document.getElementById("plMonths").value = "1";
+  document.getElementById("plDue").value = "";
   document.getElementById("plAdd").textContent = "Ajouter";
 }
 function renderPlanTab() {
@@ -2684,7 +2686,7 @@ function renderPlanTab() {
   const expDay = list.reduce((a, e) => a + plExpDaily(e), 0);
   document.getElementById("plExpList").innerHTML = list.length ? list.map(e => `
     <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(e.name)}</div>
-    <div class="meta">${fmt(e.amount)} sur ${e.months} mois · ${fmt(Math.round(plExpDaily(e)))} / jour</div></div>
+    <div class="meta">${fmt(e.amount)} sur ${e.months} mois · ${fmt(Math.round(plExpDaily(e)))} / jour${e.due ? " · paiement le " + esc(e.due) : ""}</div></div>
     <div><button class="small ghost" data-plmod="${e.id}">Modifier</button>
     <button class="small danger" data-pldel="${e.id}">Supprimer</button></div></div>`).join("")
     : `<div class="empty">Aucune dépense</div>`;
@@ -2697,7 +2699,7 @@ function renderPlanTab() {
   const cover = expDay ? Math.round(a.profit / expDay * 100) : 0;
   document.getElementById("plSummary").innerHTML = `
     <table style="width:100%;font-size:15px;border-collapse:collapse">
-      <tr><td style="padding:4px 0">Moyenne du bénéfice / jour (${a.n} jours)</td><td style="text-align:right">${fmt(Math.round(a.profit))}</td></tr>
+      <tr><td style="padding:4px 0">Moyenne du bénéfice / jour (total ÷ ${a.n} jours, du ${a.from} au ${a.to})</td><td style="text-align:right">${fmt(Math.round(a.profit))}</td></tr>
       <tr><td style="padding:4px 0">Dépenses / jour</td><td style="text-align:right">${fmt(Math.round(expDay))}</td></tr>
       <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">${surplus >= 0 ? "Excédent / jour" : "Déficit / jour"}</td><td style="text-align:right" class="${surplus >= 0 ? "in" : "out"}">${fmt(Math.round(Math.abs(surplus)))}</td></tr>
       <tr><td style="padding:4px 0">Couverture des dépenses par le bénéfice</td><td style="text-align:right">${cover} %</td></tr>
@@ -2727,13 +2729,14 @@ document.getElementById("plAdd").addEventListener("click", () => {
   const name = document.getElementById("plName").value.trim();
   const amount = parseFloat(document.getElementById("plAmt").value);
   const months = Math.max(1, parseInt(document.getElementById("plMonths").value, 10) || 1);
+  const due = document.getElementById("plDue").value;
   if (!name) return alert("Mets le nom de la dépense.");
   if (!(amount > 0)) return alert("Mets le montant.");
   if (plEdit) {
     const e = D.plan.expenses.find(x => x.id === plEdit);
-    if (e) Object.assign(e, { name, amount, months });
+    if (e) Object.assign(e, { name, amount, months, due });
   } else {
-    D.plan.expenses.push({ id: "e" + uid(), name, amount, months });
+    D.plan.expenses.push({ id: "e" + uid(), name, amount, months, due });
   }
   plResetForm();
   renderAll();
@@ -2748,6 +2751,7 @@ document.getElementById("plExpList").addEventListener("click", e => {
     document.getElementById("plName").value = x.name;
     document.getElementById("plAmt").value = x.amount;
     document.getElementById("plMonths").value = x.months;
+    document.getElementById("plDue").value = x.due || "";
     document.getElementById("plAdd").textContent = "Enregistrer la modification";
     document.getElementById("plName").focus();
     return;
@@ -2758,7 +2762,8 @@ document.getElementById("plExpList").addEventListener("click", e => {
     renderAll();
   }
 });
-document.getElementById("plDays").addEventListener("change", renderAll);
+document.getElementById("plFrom").addEventListener("change", renderAll);
+document.getElementById("plTo").addEventListener("change", renderAll);
 document.getElementById("plPct").addEventListener("input", () => {
   D.plan.pctBuy = Math.min(100, Math.max(0, parseFloat(document.getElementById("plPct").value) || 0));
   renderAll();
