@@ -134,15 +134,12 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 
 <div class="tabs">
   <button class="tab on" data-tab="dash">Ventes</button>
-  <button class="tab" data-tab="prod">Produits</button>
-  <button class="tab" data-tab="mov">Mouvements</button>
-  <button class="tab" data-tab="buy">Achats</button>
-  <button class="tab" data-tab="cash">Caisse</button>
   <button class="tab" data-tab="cli">Clients</button>
-  <button class="tab" data-tab="sit">Situation</button>
-  <button class="tab" data-tab="ana">تحليل</button>
-  <button class="tab" data-tab="todo">À acheter</button>
+  <button class="tab" data-tab="cash">Caisse</button>
+  <button class="tab" data-tab="prod">Produits</button>
+  <button class="tab" data-tab="buy">Achats</button>
   <button class="tab" data-tab="plan">Plan</button>
+  <button class="tab" data-tab="ana">Analyse</button>
   <button class="tab" data-tab="sync">Synchro</button>
   <button class="tab" data-tab="data">Sauvegarde</button>
 </div>
@@ -244,9 +241,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
       <div class="field"><label for="pFilter">Afficher</label><select id="pFilter"><option value="all">Tous</option><option value="needed">المطلوبة (تحت الحد الأدنى)</option><option value="out">Rupture (stock 0)</option><option value="nomargin">Sans marge définie</option><option value="noprice">Sans prix de vente</option><option value="kg">Au poids (kg)</option><option value="unit">À l'unité</option></select></div></div>
     <div class="meta" id="pListCount" style="margin-bottom:6px"></div><div class="row" style="margin:0 0 8px"><button class="ghost small" id="pGenAll">Générer les codes manquants</button></div>
     <div id="prodList"></div></div>
-</section>
 
-<section id="tab-mov" class="hidden">
   <div class="card">
     <h2>Transfert vrac → pots (par type de miel)</h2>
     <div class="row" style="margin-top:0"><div class="field"><label for="cdBulk">Miel en vrac</label><select id="cdBulk"></select></div></div>
@@ -281,6 +276,8 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <div class="card"><h2>Historique</h2><div id="movList"></div></div>
 </section>
 
+
+
 <section id="tab-buy" class="hidden">
   <div class="card">
     <h2>Bon d'achat</h2>
@@ -308,6 +305,23 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="label" style="margin-top:8px">Le total est ajouté comme dette au fournisseur (dans Dettes fournisseurs), et les quantités sont ajoutées au stock.</div>
   </div>
   <div class="card"><h2>Bons enregistrés</h2><div id="bList"></div></div>
+
+  <div class="card">
+    <h2>Liste d'achat (produits à chercher)</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="wName">Produit</label><input type="text" id="wName" placeholder="ex : زبدة الشيا"></div></div>
+    <div class="row">
+      <div class="field"><label for="wQty">Quantité voulue</label><input type="number" id="wQty" min="0" step="0.1"></div>
+      <div class="field"><label for="wUnit">Unité</label><select id="wUnit"><option value="unité">unité</option><option value="kg">kg</option></select></div>
+      <div class="field"><label for="wPrice">Prix max souhaité (DA)</label><input type="number" id="wPrice" min="0" step="10"></div>
+    </div>
+    <div class="row"><div class="field"><label for="wWhere">Où chercher (fournisseur / marché)</label><input type="text" id="wWhere" placeholder="ex : Bioasis, marché..."></div></div>
+    <div class="row"><input type="text" id="wNote" placeholder="Note (marque, taille, remarque...)"><button id="wAdd">Ajouter à la liste</button></div>
+  </div>
+  <div class="card">
+    <div class="row" style="margin-top:0"><div class="field"><label for="wFilter">Afficher</label><select id="wFilter"><option value="all">Tous</option><option value="todo">À chercher</option><option value="found">Trouvé</option><option value="bought">Acheté</option></select></div></div>
+    <div class="meta" id="wCount" style="margin:6px 0"></div>
+    <div id="wList"></div>
+  </div>
 </section>
 
 <section id="tab-cash" class="hidden">
@@ -346,9 +360,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div id="eList" style="margin-top:8px"></div>
   </div>
 </section>
-<section id="tab-sit" class="hidden">
-  <div class="card" id="ctrl"></div>
-</section>
+
 <section id="tab-cli" class="hidden">
   <div class="card">
     <h2>Nouveau client</h2>
@@ -407,25 +419,10 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="label" style="margin-top:6px">« Enregistrer » ajoute les charges du mois dans les dépenses, pour que la caisse et le bénéfice net les prennent en compte. Chaque charge n'est enregistrée qu'une fois par mois.</div>
   </div>
   <div class="card"><h2>Qualité des données</h2><div id="anaQuality"></div></div>
+
+  <div class="card" id="ctrl"></div>
 </section>
-<section id="tab-todo" class="hidden">
-  <div class="card">
-    <h2>Liste d'achat (produits à chercher)</h2>
-    <div class="row" style="margin-top:0"><div class="field"><label for="wName">Produit</label><input type="text" id="wName" placeholder="ex : زبدة الشيا"></div></div>
-    <div class="row">
-      <div class="field"><label for="wQty">Quantité voulue</label><input type="number" id="wQty" min="0" step="0.1"></div>
-      <div class="field"><label for="wUnit">Unité</label><select id="wUnit"><option value="unité">unité</option><option value="kg">kg</option></select></div>
-      <div class="field"><label for="wPrice">Prix max souhaité (DA)</label><input type="number" id="wPrice" min="0" step="10"></div>
-    </div>
-    <div class="row"><div class="field"><label for="wWhere">Où chercher (fournisseur / marché)</label><input type="text" id="wWhere" placeholder="ex : Bioasis, marché..."></div></div>
-    <div class="row"><input type="text" id="wNote" placeholder="Note (marque, taille, remarque...)"><button id="wAdd">Ajouter à la liste</button></div>
-  </div>
-  <div class="card">
-    <div class="row" style="margin-top:0"><div class="field"><label for="wFilter">Afficher</label><select id="wFilter"><option value="all">Tous</option><option value="todo">À chercher</option><option value="found">Trouvé</option><option value="bought">Acheté</option></select></div></div>
-    <div class="meta" id="wCount" style="margin:6px 0"></div>
-    <div id="wList"></div>
-  </div>
-</section>
+
 <section id="tab-plan" class="hidden">
   <div class="card">
     <h2>الربح مقابل المصاريف</h2>
@@ -668,7 +665,7 @@ function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.cus
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
   t.classList.add("on");
-  ["dash", "prod", "mov", "buy", "cash", "cli", "sit", "ana", "todo", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
+  ["dash", "prod", "buy", "cash", "cli", "ana", "plan", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
 }));
 
 function resetProdForm() {
