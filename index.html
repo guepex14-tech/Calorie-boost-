@@ -189,24 +189,9 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   </div>
   <div class="card"><h2>Ventes de cette journée</h2><div id="sList"></div></div>
   <div class="card"><h2>Journées précédentes</h2><div id="hDays"></div></div>
-  <div class="stats">
-    </section>
+  </section>
 
 <section id="tab-prod" class="hidden">
-  <div class="card"><div class="label">Valeur du stock (achat)</div><div class="big" id="kCost">—</div></div>
-    <div class="card"><div class="label">Valeur de vente</div><div class="big" id="kSale">—</div></div>
-    <div class="card"><div class="label">Produits</div><div class="big" id="kCount">—</div></div>
-    <div class="card"><div class="label">Alertes</div><div class="big" id="kAlerts">—</div></div>
-  </div>
-  <div class="card">
-    <h2>Alertes de stock bas</h2>
-    <div id="alerts"></div>
-  </div>
-  <div class="card">
-    <h2>Tous les produits</h2>
-    <div id="dashList"></div>
-  </div>
-  
   <div class="card">
     <h2 id="pTitle">Ajouter un produit</h2>
     <input type="hidden" id="pId">
@@ -236,6 +221,20 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="row"><input type="text" id="pExcWhy" placeholder="Raison de l'exception (ex : produit d'appel)"></div>
     <div class="row"><label class="meta" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pDupOk"> Je confirme : c'est un produit différent</label></div>
     <div class="row"><button id="pSave">Enregistrer</button><button class="ghost" id="pCancel">Annuler</button></div>
+  </div>
+  <div class="stats">
+  <div class="card"><div class="label">Valeur du stock (achat)</div><div class="big" id="kCost">—</div></div>
+    <div class="card"><div class="label">Valeur de vente</div><div class="big" id="kSale">—</div></div>
+    <div class="card"><div class="label">Produits</div><div class="big" id="kCount">—</div></div>
+    <div class="card"><div class="label">Alertes</div><div class="big" id="kAlerts">—</div></div>
+  </div>
+  <div class="card">
+    <h2>Alertes de stock bas</h2>
+    <div id="alerts"></div>
+  </div>
+  <div class="card">
+    <h2>Tous les produits</h2>
+    <div id="dashList"></div>
   </div>
   <div class="card"><h2>Liste</h2><input type="text" id="pListSearch" placeholder="Chercher un produit (ex : سدر، زيت...)" autocomplete="off" style="width:100%;margin-bottom:8px"><div class="row" style="margin:0 0 8px"><div class="field"><label for="pSort">Trier par</label><select id="pSort"><option value="default">Ordre d'ajout</option><option value="margin_desc">Marge : la plus haute</option><option value="margin_asc">Marge : la plus basse</option><option value="qty_desc">Quantité : la plus grande</option><option value="qty_asc">Quantité : la plus petite</option><option value="old">Dernier mouvement : le plus ancien</option></select></div>
       <div class="field"><label for="pFilter">Afficher</label><select id="pFilter"><option value="all">Tous</option><option value="needed">المطلوبة (تحت الحد الأدنى)</option><option value="out">Rupture (stock 0)</option><option value="nomargin">Sans marge définie</option><option value="noprice">Sans prix de vente</option><option value="kg">Au poids (kg)</option><option value="unit">À l'unité</option></select></div></div>
@@ -1794,7 +1793,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 25/11/2026 (تحديث مولد بالذكاء الاصطناعي)";
+  el.textContent += " · version 25/11/2026 (إضافة المنتج في الأعلى)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
