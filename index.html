@@ -443,7 +443,9 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <h2>فترة حساب المتوسط</h2>
     <div class="row" style="margin-top:0"><div class="field"><label for="dgFrom">Du</label><input type="date" id="dgFrom"></div><div class="field"><label for="dgTo">Au</label><input type="date" id="dgTo"></div></div>
   </div>
-  <div class="card"><h2>الخلاصة</h2><div id="dgSummary"></div></div>
+  <div class="card"><h2>الخلاصة</h2>
+    <div class="row" style="margin-top:0"><button id="dgCalc">🧮 احسب</button></div>
+    <div id="dgSummary"></div></div>
   <div class="card">
     <h2>توزيع المبيعات اليومي (بالأولوية)</h2>
     <div id="dgAlloc"></div>
@@ -1812,7 +1814,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 26/11/2026 (Diagnostic : قائمة المصاريف)";
+  el.textContent += " · version 26/11/2026 (Diagnostic : زر احسب)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
@@ -2669,6 +2671,7 @@ function renderSupLate() {
   ["supLate", "supLate2"].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
 }
 function dgN(v) { return '<span dir="ltr">' + Math.round(v).toLocaleString("en-US").replace(/,/g, " ") + '</span> دج'; }
+let dgRun = false;
 function renderDiag() {
   if (!document.getElementById("dgTable")) return;
   if (!D.diag) D.diag = { cash: 0, items: [] };
@@ -2693,6 +2696,8 @@ function renderDiag() {
       <tr style="font-weight:700"><td style="padding:6px 0">المجموع</td><td></td><td></td><td></td><td style="text-align:center">${dgN(A)}</td><td></td></tr>
     </table>` : `<div class="empty">لا توجد مستحقات. أضف الأول.</div>`;
 
+  if (!dgRun) return;
+  dgRun = false;
   const fromEl = document.getElementById("dgFrom"), toEl = document.getElementById("dgTo");
   if (!fromEl.value) fromEl.value = addDaysStr(today(), -29);
   if (!toEl.value) toEl.value = today();
@@ -2767,10 +2772,9 @@ document.getElementById("dgTable").addEventListener("click", e => {
   D.diag.items = D.diag.items.filter(x => x.id !== id);
   renderAll();
 });
-document.getElementById("dgFrom").addEventListener("change", renderDiag);
 document.getElementById("dgName").addEventListener("change", () => { document.getElementById("dgNameOther").style.display = document.getElementById("dgName").value === "أخرى" ? "" : "none"; });
+document.getElementById("dgCalc").addEventListener("click", () => { dgRun = true; renderDiag(); });
 document.getElementById("dgType").addEventListener("change", () => { document.getElementById("dgDue").closest(".field").style.display = document.getElementById("dgType").value === "due" ? "" : "none"; });
-document.getElementById("dgTo").addEventListener("change", renderDiag);
 
 /* Sauvegarde: boutons relais vers les actions existantes */
 document.getElementById("exportMirror").addEventListener("click", () => document.getElementById("exportBtn").click());
