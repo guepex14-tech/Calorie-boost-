@@ -437,7 +437,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <div class="card"><h2>الجدول اليومي</h2><div id="dgTable"></div></div>
   <div class="card">
     <h2>الصندوق</h2>
-    <div class="row" style="margin-top:0"><div class="field"><label for="dgCash">Caisse réelle comptée (DA)</label><input type="number" id="dgCash" min="0" step="100"></div></div>
+    <div id="dgCashBox" class="label">—</div>
   </div>
   <div class="card">
     <h2>فترة حساب المتوسط</h2>
@@ -1812,7 +1812,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 26/11/2026 (Diagnostic : ترتيب الأولويات)";
+  el.textContent += " · version 26/11/2026 (Diagnostic : صندوق من Caisse)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
@@ -2673,9 +2673,8 @@ function renderDiag() {
   if (!document.getElementById("dgTable")) return;
   if (!D.diag) D.diag = { cash: 0, items: [] };
   if (!D.diag.items) D.diag.items = [];
-  const cashEl = document.getElementById("dgCash");
-  if (cashEl.value === "" && D.diag.cash) cashEl.value = D.diag.cash;
-  D.diag.cash = parseFloat(cashEl.value) || 0;
+  const cashNow = cashBalance().balance;
+  document.getElementById("dgCashBox").innerHTML = "الصندوق (من تبويب Caisse): <strong>" + dgN(cashNow) + "</strong>";
 
   const items = [...D.diag.items].sort((a, b) => (a.due || "").localeCompare(b.due || ""));
   const A = items.reduce((a, it) => a + dgDaily(it), 0);
@@ -2701,7 +2700,7 @@ function renderDiag() {
   const n = Math.max(1, Math.round((new Date(to) - new Date(from)) / 86400000) + 1);
   const list = D.sales.filter(s => s.date >= from && s.date <= to);
   const P = list.reduce((a, s) => a + saleProfit(s), 0) / n;
-  const cash = D.diag.cash || 0;
+  const cash = cashNow;
   const covered = Math.min(A, P);
   const gap = Math.max(0, A - P);
   const daysCash = gap > 0 && cash > 0 ? Math.floor(cash / gap) : null;
@@ -2758,7 +2757,6 @@ document.getElementById("dgTable").addEventListener("click", e => {
   D.diag.items = D.diag.items.filter(x => x.id !== id);
   renderAll();
 });
-document.getElementById("dgCash").addEventListener("input", () => { D.diag.cash = parseFloat(document.getElementById("dgCash").value) || 0; renderDiag(); });
 document.getElementById("dgFrom").addEventListener("change", renderDiag);
 document.getElementById("dgType").addEventListener("change", () => { document.getElementById("dgDue").closest(".field").style.display = document.getElementById("dgType").value === "due" ? "" : "none"; });
 document.getElementById("dgTo").addEventListener("change", renderDiag);
