@@ -426,6 +426,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <div class="card">
     <h2>إدخال مستحق</h2>
     <div class="row" style="margin-top:0"><div class="field"><label for="dgName">Nom</label><input type="text" id="dgName" placeholder="ex : Loyer"></div><div class="field"><label for="dgAmt">Montant dû (DA)</label><input type="number" id="dgAmt" min="0" step="100"></div><div class="field"><label for="dgDue">Date de paiement</label><input type="date" id="dgDue"></div></div>
+    <div class="row"><div class="field"><label for="dgType">Type</label><select id="dgType"><option value="due">Non récurrent (une fois, avant une date)</option><option value="rec">Récurrent</option></select></div><div class="field"><label for="dgMonths">Tous les (mois)</label><input type="number" id="dgMonths" min="1" step="1" value="1"></div></div>
     <div class="row"><button id="dgAdd">Ajouter</button></div>
   </div>
   <div class="card">
@@ -1807,7 +1808,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 26/11/2026 (Diagnostic : période)";
+  el.textContent += " · version 26/11/2026 (Diagnostic : مستحقات متكررة)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
@@ -2655,7 +2656,7 @@ document.getElementById("pGenAll").addEventListener("click", () => {
 
 /* ===== Diagnostic : المستحقات، الحساب اليومي، والتغطية من الربح أو رأس المال ===== */
 function dgLeft(it) { return Math.round((new Date(it.due) - new Date(today())) / 86400000); }
-function dgDaily(it) { const left = dgLeft(it); return (Number(it.amount) || 0) / Math.max(1, left); }
+function dgDaily(it) { if (it.kind === "rec") return (Number(it.amount) || 0) / ((Number(it.months) || 1) * 30); const left = dgLeft(it); return (Number(it.amount) || 0) / Math.max(1, left); }
 function renderSupLate() {
   const late = debtList().filter(s => Math.max(0, debtOwed(s)) > 0 && s.payDate && s.payDate < today());
   const html = late.length
@@ -2663,6 +2664,7 @@ function renderSupLate() {
     : `<div class="in">✔ لا يوجد سداد متأخر</div>`;
   ["supLate", "supLate2"].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
 }
+function dgN(v) { return '<span dir="ltr">' + Math.round(v).toLocaleString("en-US").replace(/,/g, " ") + '</span> دج'; }
 function renderDiag() {
   if (!document.getElementById("dgTable")) return;
   if (!D.diag) D.diag = { cash: 0, items: [] };
@@ -2673,20 +2675,21 @@ function renderDiag() {
 
   const items = [...D.diag.items].sort((a, b) => (a.due || "").localeCompare(b.due || ""));
   const A = items.reduce((a, it) => a + dgDaily(it), 0);
+  const typeTxt = it => it.kind === "rec" ? "متكرر كل " + (it.months || 1) + " شهر" : "غير متكرر";
   document.getElementById("dgTable").innerHTML = items.length ? `
     <table style="width:100%;font-size:15px;border-collapse:collapse">
-      <tr style="text-align:right;border-bottom:1px solid var(--border)"><th style="padding:6px 0">Nom</th><th>Montant</th><th>Date</th><th>Jours</th><th>Par jour</th><th></th></tr>
+      <tr style="border-bottom:1px solid var(--border)"><th style="padding:6px 0;text-align:right">الاسم</th><th>النوع</th><th>المبلغ</th><th>الأيام</th><th>في اليوم</th><th></th></tr>
       ${items.map(it => {
         const left = dgLeft(it);
-        return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0">${esc(it.name)}</td><td style="text-align:right">${fmt(it.amount)}</td><td>${esc(it.due)}</td>
-          <td style="text-align:right" class="${left <= 0 ? "out" : ""}">${left <= 0 ? "échu" : left}</td>
-          <td style="text-align:right"><strong>${fmt(Math.round(dgDaily(it)))}</strong></td>
-          <td><button class="small danger" data-dgdel="${it.id}">Supprimer</button></td></tr>`;
+        const daysTxt = it.kind === "rec" ? "—" : (left <= 0 ? "متأخر" : left);
+        return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0">${esc(it.name)}</td><td style="text-align:center;font-size:13px">${typeTxt(it)}</td>
+          <td style="text-align:center">${dgN(it.amount)}</td><td style="text-align:center" class="${left <= 0 && it.kind !== "rec" ? "out" : ""}">${daysTxt}</td>
+          <td style="text-align:center"><strong>${dgN(dgDaily(it))}</strong></td>
+          <td><button class="small danger" data-dgdel="${it.id}">حذف</button></td></tr>`;
       }).join("")}
-      <tr style="font-weight:700"><td style="padding:6px 0">Total</td><td style="text-align:right">${fmt(items.reduce((a, it) => a + (Number(it.amount) || 0), 0))}</td><td></td><td></td><td style="text-align:right">${fmt(Math.round(A))}</td><td></td></tr>
-    </table>` : `<div class="empty">Aucun montant. Ajoute le premier.</div>`;
+      <tr style="font-weight:700"><td style="padding:6px 0">المجموع</td><td></td><td></td><td></td><td style="text-align:center">${dgN(A)}</td><td></td></tr>
+    </table>` : `<div class="empty">لا توجد مستحقات. أضف الأول.</div>`;
 
-  // profit average over the last 30 days
   const fromEl = document.getElementById("dgFrom"), toEl = document.getElementById("dgTo");
   if (!fromEl.value) fromEl.value = addDaysStr(today(), -29);
   if (!toEl.value) toEl.value = today();
@@ -2695,31 +2698,27 @@ function renderDiag() {
   const list = D.sales.filter(s => s.date >= from && s.date <= to);
   const P = list.reduce((a, s) => a + saleProfit(s), 0) / n;
   const cash = D.diag.cash || 0;
-  const coverP = Math.min(A, P);
+  const covered = Math.min(A, P);
   const gap = Math.max(0, A - P);
-  const surplus = Math.max(0, P - A);
   const daysCash = gap > 0 && cash > 0 ? Math.floor(cash / gap) : null;
 
-  let text = "";
-  if (!items.length) {
-    text = "أدخل المستحقات (الاسم والمبلغ وتاريخ الدفع) باش نحسبو المبلغ اللي خاص تلمو في كل يوم.";
-  } else if (gap <= 0) {
-    text = `الربح اليومي (${fmt(Math.round(P))}) كيغطي كل المستحقات اليومية (${fmt(Math.round(A))}). الفائض ${fmt(Math.round(surplus))} في اليوم.`;
-  } else {
-    text = `المستحقات كتطلب ${fmt(Math.round(A))} في اليوم، والربح اليومي ${fmt(Math.round(P))} كيغطي ${fmt(Math.round(coverP))} فقط. ` +
-      `الفرق ${fmt(Math.round(gap))} في اليوم خاصو يجي من رأس المال، أي حوالي ${fmt(Math.round(gap * 30))} في الشهر.` +
-      (daysCash !== null ? ` الصندوق الحالي (${fmt(cash)}) يكفي لحوالي ${daysCash} يوم بهاد الوتيرة.` : "");
+  const lines = [];
+  if (!items.length) lines.push("أدخل المستحقات (المتكررة وغير المتكررة) باش نحسبو المبلغ اللي خاصك تلمّو كل يوم.");
+  else {
+    lines.push(`المطلوب في اليوم: ${dgN(A)}`);
+    lines.push(`الربح اليومي (متوسط ${n} يوم): ${dgN(P)}`);
+    lines.push(`المغطى من الربح: ${dgN(covered)}`);
+    if (gap > 0) {
+      lines.push(`الناقص من رأس المال: ${dgN(gap)} في اليوم`);
+      lines.push(`أي حوالي ${dgN(gap * 30)} في الشهر`);
+      if (daysCash !== null) lines.push(`الصندوق الحالي (${dgN(cash)}) يكفي حوالي ${daysCash} يوم`);
+    } else {
+      lines.push(`الفائض اليومي: ${dgN(P - A)}`);
+    }
   }
   document.getElementById("dgSummary").innerHTML = `
-    <table style="width:100%;font-size:15px;border-collapse:collapse">
-      <tr><td style="padding:4px 0">Bénéfice moyen / jour (${n} jours, du ${from} au ${to})</td><td style="text-align:right">${fmt(Math.round(P))}</td></tr>
-      <tr><td style="padding:4px 0">À mettre de côté / jour</td><td style="text-align:right"><strong>${fmt(Math.round(A))}</strong></td></tr>
-      <tr><td style="padding:4px 0">Couvert par le bénéfice</td><td style="text-align:right" class="in">${fmt(Math.round(coverP))}</td></tr>
-      <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">${gap > 0 ? "Manque à prendre du capital / jour" : "Excédent / jour"}</td>
-        <td style="text-align:right" class="${gap > 0 ? "out" : "in"}">${fmt(Math.round(gap > 0 ? gap : surplus))}</td></tr>
-    </table>
-    ${gap > 0 ? `<div class="out" style="margin-top:8px">⚠ تنبيه: الربح ما كيكفيش. رأس المال غادي يتخصم ${fmt(Math.round(gap))} في اليوم. راقب المخزون ولا تزيد السحب.</div>` : ""}
-    <div style="margin-top:8px;line-height:1.8">${text}</div>`;
+    <div style="line-height:2">${lines.map(l => `<div>• ${l}</div>`).join("")}</div>
+    ${gap > 0 ? `<div class="out" style="margin-top:8px">⚠ تنبيه: الربح ما كيكفيش. رأس المال غادي يتخصم ${dgN(gap)} في اليوم، راقب المخزون ولا تزيد السحب.</div>` : ""}`;
 }
 document.getElementById("dgSAdd").addEventListener("click", () => {
   const name = document.getElementById("dgSName").value.trim();
@@ -2737,11 +2736,13 @@ document.getElementById("dgAdd").addEventListener("click", () => {
   const name = document.getElementById("dgName").value.trim();
   const amount = parseFloat(document.getElementById("dgAmt").value);
   const due = document.getElementById("dgDue").value;
+  const kind = document.getElementById("dgType").value;
+  const months = Math.max(1, parseInt(document.getElementById("dgMonths").value, 10) || 1);
   if (!name) return alert("Mets le nom.");
-  if (!(amount > 0)) return alert("Mets le montant dû.");
-  if (!due) return alert("Mets la date de paiement.");
+  if (!(amount > 0)) return alert("Mets le montant.");
+  if (kind === "due" && !due) return alert("Mets la date de paiement.");
   if (!D.diag.items) D.diag.items = [];
-  D.diag.items.push({ id: "g" + uid(), name, amount, due });
+  D.diag.items.push({ id: "g" + uid(), name, amount, due, kind, months });
   document.getElementById("dgName").value = ""; document.getElementById("dgAmt").value = ""; document.getElementById("dgDue").value = "";
   renderAll();
 });
@@ -2754,6 +2755,7 @@ document.getElementById("dgTable").addEventListener("click", e => {
 });
 document.getElementById("dgCash").addEventListener("input", () => { D.diag.cash = parseFloat(document.getElementById("dgCash").value) || 0; renderDiag(); });
 document.getElementById("dgFrom").addEventListener("change", renderDiag);
+document.getElementById("dgType").addEventListener("change", () => { document.getElementById("dgDue").closest(".field").style.display = document.getElementById("dgType").value === "due" ? "" : "none"; });
 document.getElementById("dgTo").addEventListener("change", renderDiag);
 
 /* Sauvegarde: boutons relais vers les actions existantes */
