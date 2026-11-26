@@ -444,6 +444,10 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="row" style="margin-top:0"><div class="field"><label for="dgFrom">Du</label><input type="date" id="dgFrom"></div><div class="field"><label for="dgTo">Au</label><input type="date" id="dgTo"></div></div>
   </div>
   <div class="card"><h2>الخلاصة</h2><div id="dgSummary"></div></div>
+  <div class="card">
+    <h2>توزيع المبيعات اليومي (بالأولوية)</h2>
+    <div id="dgAlloc"></div>
+  </div>
 </section>
 <section id="tab-sync" class="hidden">
   <div class="card">
@@ -1808,7 +1812,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 26/11/2026 (Diagnostic : مستحقات متكررة)";
+  el.textContent += " · version 26/11/2026 (Diagnostic : ترتيب الأولويات)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
@@ -2719,6 +2723,7 @@ function renderDiag() {
   document.getElementById("dgSummary").innerHTML = `
     <div style="line-height:2">${lines.map(l => `<div>• ${l}</div>`).join("")}</div>
     ${gap > 0 ? `<div class="out" style="margin-top:8px">⚠ تنبيه: الربح ما كيكفيش. رأس المال غادي يتخصم ${dgN(gap)} في اليوم، راقب المخزون ولا تزيد السحب.</div>` : ""}`;
+  renderAlloc();
 }
 document.getElementById("dgSAdd").addEventListener("click", () => {
   const name = document.getElementById("dgSName").value.trim();
@@ -2762,6 +2767,47 @@ document.getElementById("dgTo").addEventListener("change", renderDiag);
 document.getElementById("exportMirror").addEventListener("click", () => document.getElementById("exportBtn").click());
 document.getElementById("importMirror").addEventListener("click", () => document.getElementById("importBtn").click());
 document.getElementById("resetMirror").addEventListener("click", () => document.getElementById("resetBtn").click());
+
+/* ===== توزيع المبيعات اليومي: 1) المستحقات 2) الشراء (المخزون) 3) الموردين 4) الباقي ===== */
+function renderAlloc() {
+  const box = document.getElementById("dgAlloc");
+  if (!box) return;
+  const from = document.getElementById("dgFrom").value || addDaysStr(today(), -29);
+  const to = document.getElementById("dgTo").value || today();
+  const n = Math.max(1, Math.round((new Date(to) - new Date(from)) / 86400000) + 1);
+  const list = D.sales.filter(s => s.date >= from && s.date <= to);
+  const S = list.reduce((a, s) => a + (s.amount || 0), 0) / n;     // ventes / jour
+  const P = list.reduce((a, s) => a + saleProfit(s), 0) / n;       // bénéfice / jour
+  const C = Math.max(0, S - P);                                    // capital récupéré / jour
+  const A = (D.diag.items || []).reduce((a, it) => a + dgDaily(it), 0);   // dépenses / jour
+  const T = debtList().filter(s => Math.max(0, debtOwed(s)) > 0).reduce((a, s) => a + (s.payAmt || 0), 0) / 30; // échéances / jour
+
+  // 1) le bénéfice couvre les dépenses; le manque vient du capital
+  const fromProfit = Math.min(P, A);
+  const shortfall = Math.max(0, A - P);
+  // 2) le capital restant se divise en deux moitiés: achats et paiement
+  const capital = Math.max(0, C - shortfall);
+  let buy = capital / 2;
+  let pay = capital / 2;
+  // 3) le paiement vient de sa moitié; s'il manque, on complète depuis la part des achats
+  let topup = 0;
+  if (pay < T) { topup = Math.min(T - pay, buy); buy -= topup; pay += topup; }
+  // si le paiement dépasse l'échéance, l'excédent retourne aux achats (préserver le stock)
+  if (pay > T) { buy += pay - T; pay = T; }
+  const missing = Math.max(0, T - pay);
+
+  const lines = [
+    `المبيعات في اليوم: ${dgN(S)}`,
+    `١) المصاريف: ${dgN(A)} (من الربح ${dgN(fromProfit)}${shortfall > 0 ? "، ومن رأس المال " + dgN(shortfall) : ""})`,
+    `٢) رأس المال المتاح للشراء والسداد: ${dgN(capital)}`,
+    `٣) الشراء: ${dgN(buy)}`,
+    `٤) السداد للموردين: ${dgN(pay)} من ${dgN(T)} المطلوبة`
+  ];
+  box.innerHTML = `<div style="line-height:2">${lines.map(l => `<div>${l}</div>`).join("")}</div>` +
+    (topup > 0 ? `<div class="label" style="margin-top:6px">تم نقل ${dgN(topup)} من الشراء لتكملة السداد.</div>` : "") +
+    (missing > 0 ? `<div class="out" style="margin-top:6px">⚠ السداد ناقص ${dgN(missing)} في اليوم، الموردين غادي يسالو. تفاوض على جدولة قبل ما يتأخرو.</div>` : (T > 0 ? `<div class="in" style="margin-top:6px">✔ السداد للموردين مغطى.</div>` : `<div class="label" style="margin-top:6px">لم تحدد أقساط الموردين بعد.</div>`)) +
+    (shortfall > 0 ? `<div class="out" style="margin-top:6px">⚠ الربح ما غطاش المصاريف، الفرق ${dgN(shortfall)} في اليوم من رأس المال.</div>` : "");
+}
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
