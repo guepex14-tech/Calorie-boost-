@@ -138,7 +138,6 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <button class="tab" data-tab="cash">Caisse</button>
   <button class="tab" data-tab="prod">Produits</button>
   <button class="tab" data-tab="buy">Achats</button>
-  <button class="tab" data-tab="plan">Plan</button>
   <button class="tab" data-tab="diag">Diagnostic</button>
   <button class="tab" data-tab="ana">Analyse</button>
   <button class="tab" data-tab="sync">Synchro</button>
@@ -423,56 +422,23 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <div class="card" id="ctrl"></div>
 </section>
 
-<section id="tab-plan" class="hidden">
-  <div class="card">
-    <h2>الربح مقابل المصاريف</h2>
-    <div class="row" style="margin-top:0"><div class="field"><label for="plFrom">Du</label><input type="date" id="plFrom"></div><div class="field"><label for="plTo">Au</label><input type="date" id="plTo"></div></div>
-    <div id="plSummary"></div>
-  </div>
-  <div class="card">
-    <h2>المصاريف (زيد، بدّل، أو احذف)</h2>
-    <div class="row" style="margin-top:0"><div class="field"><label for="plName">Nom de la dépense</label><input type="text" id="plName" placeholder="ex : Loyer"></div><div class="field"><label for="plAmt">Montant (DA)</label><input type="number" id="plAmt" min="0" step="100"></div></div>
-    <div class="row"><div class="field"><label for="plMode">Type</label><select id="plMode"><option value="rec">Récurrent (mensuel / semestriel / annuel)</option><option value="due">À payer avant une date</option></select></div></div>
-    <div class="row"><div class="field"><label for="plMonths">Période (mois): 1 = mensuel, 6 = semestriel, 12 = annuel</label><input type="number" id="plMonths" min="1" step="1" value="1"></div><div class="field"><label for="plDue">Date limite (mode "avant une date")</label><input type="date" id="plDue"></div></div>
-    <div class="row"><button id="plAdd">Ajouter</button><button class="ghost" id="plCancel">Annuler</button></div>
-    <div id="plExpList" style="margin-top:8px"></div>
-    <div id="plExpTotal" style="margin-top:8px"></div>
-  </div>
-  <div class="card">
-    <h2>جدول خلاص الموردين (من حصة الديون فقط)</h2>
-    <div id="plSched"></div>
-  </div>
-  <div class="card">
-    <h2>توزيع رأس المال: الشراء والسداد</h2>
-    <div class="row" style="margin-top:0"><div class="field"><label for="plPct">% للشراء (الباقي للديون)</label><input type="number" id="plPct" min="0" max="100" step="5"></div></div>
-    <div id="plSplit"></div>
-  </div>
-</section>
 <section id="tab-diag" class="hidden">
   <div class="card">
-    <h2>معطيات التشخيص</h2>
-    <div class="row" style="margin-top:0"><div class="field"><label for="dgCash">Caisse réelle comptée (DA)</label><input type="number" id="dgCash" min="0" step="100"></div><div class="field"><label for="dgDays">Période du calcul (jours)</label><input type="number" id="dgDays" min="1" step="1" value="30"></div></div>
+    <h2>إدخال مستحق</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="dgName">Nom</label><input type="text" id="dgName" placeholder="ex : Loyer"></div><div class="field"><label for="dgAmt">Montant dû (DA)</label><input type="number" id="dgAmt" min="0" step="100"></div><div class="field"><label for="dgDue">Date de paiement</label><input type="date" id="dgDue"></div></div>
+    <div class="row"><button id="dgAdd">Ajouter</button></div>
   </div>
   <div class="card">
-    <h2>الأقساط الشهرية للموردين (تحدد في بداية الشهر)</h2>
-    <div id="dgSup"></div>
+    <h2>ديون الموردين (للتخطيط فقط)</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="dgSName">Fournisseur</label><input type="text" id="dgSName"></div><div class="field"><label for="dgSAmt">Montant dû (DA)</label><input type="number" id="dgSAmt" min="0" step="100"></div><div class="field"><label for="dgSDue">Date de paiement</label><input type="date" id="dgSDue"></div></div>
+    <div class="row"><button id="dgSAdd">Ajouter</button></div>
   </div>
+  <div class="card"><h2>الجدول اليومي</h2><div id="dgTable"></div></div>
   <div class="card">
-    <h2>المصاريف (مبلغ + نوع + تاريخ)</h2>
-    <div class="row" style="margin-top:0"><div class="field"><label for="dgName">Nom</label><input type="text" id="dgName" placeholder="ex : Loyer"></div><div class="field"><label for="dgAmt">Montant (DA)</label><input type="number" id="dgAmt" min="0" step="100"></div></div>
-    <div class="row"><div class="field"><label for="dgMode">Type</label><select id="dgMode"><option value="rec">Récurrent</option><option value="due">À payer avant une date</option></select></div><div class="field"><label for="dgMonths">Tous les (mois)</label><input type="number" id="dgMonths" min="1" step="1" value="1"></div><div class="field"><label for="dgDue">Date de paiement</label><input type="date" id="dgDue"></div></div>
-    <div class="row"><button id="dgAddExp">Ajouter la dépense</button></div>
-    <div id="dgExpList" style="margin-top:8px"></div>
+    <h2>الصندوق</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="dgCash">Caisse réelle comptée (DA)</label><input type="number" id="dgCash" min="0" step="100"></div></div>
   </div>
-  <div class="card">
-    <h2>النتائج</h2>
-    <div id="dgResult"></div>
-  </div>
-  <div class="card">
-    <h2>هل هذا يشمل كل شي؟</h2>
-    <div class="label">يشمل: الصندوق، المبيعات والربح، المصاريف (شهرية، سنوية، قبل تاريخ)، أقساط الموردين، والتوزيع بين الشراء والسداد.</div>
-    <div class="label" style="margin-top:6px">ما يشملش: توقيت التحصيل من الزبناء، المبيعات المستقبلية (موسم رمضان)، الفوائد والغرامات (إلا تسجلات كمصاريف)، والضرائب الفعلية (إلا دخلتها كمصروف).</div>
-  </div>
+  <div class="card"><h2>الخلاصة</h2><div id="dgSummary"></div></div>
 </section>
 <section id="tab-sync" class="hidden">
   <div class="card">
@@ -484,6 +450,11 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   </div>
 </section>
 <section id="tab-data" class="hidden">
+  <div class="card"><h2>Sauvegarde</h2>
+    <button id="exportMirror">Exporter</button>
+    <button id="importMirror">Importer</button>
+    <button class="danger" id="resetMirror">Réinitialiser</button>
+  </div>
   <div class="card">
     <h2>Sauvegarde</h2>
     <div class="row" style="margin-top:0"><button class="ghost" id="exp">Exporter (copier)</button></div>
@@ -509,14 +480,14 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 <div class="sub">CALORIE BOOST</div>
 
 <div class="tabs">
-  <button class="dtab on" data-tab="dash">Ventes</button>
+  <button class="dtab on" data-tab="dash">Résumé</button>
   <button class="dtab" data-tab="sup">Fournisseurs</button>
   <button class="dtab" data-tab="pay">Paiements mensuels</button>
-  <button class="dtab" data-tab="add">Ajouter</button>
 </div>
 
 <!-- Tableau de bord -->
 <section id="dtab-dash">
+  <div id="supLate" style="margin-bottom:8px"></div>
   <div class="card">
     <div class="label">Total restant</div>
     <div class="big" id="kTotal">—</div>
@@ -544,6 +515,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 
 <!-- Liste fournisseurs -->
 <section id="dtab-sup" class="hidden">
+  <div id="supLate2" style="margin-bottom:8px"></div>
   <div id="supList"></div>
 </section>
 
@@ -567,6 +539,8 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div id="payList"></div>
   </div>
 </section>
+
+
 
 <!-- Ajouter / modifier -->
 <section id="dtab-add" class="hidden">
@@ -623,7 +597,6 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="row"><button class="ghost" id="importBtn">Restaurer</button><button class="danger" id="resetBtn">Réinitialiser</button></div>
   </div>
 </section>
-
 <footer>Les données sont gardées sur cet appareil. Utilise "Exporter" pour les garder ailleurs.</footer>
 </main></div>
 <script>
@@ -695,12 +668,12 @@ function renderMoves() {
   }).join("") || `<div class="empty">Aucun mouvement</div>`;
 }
 
-function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.fixed) D.fixed = defaultFixed(); if (!D.supTargets) D.supTargets = {}; if (!D.cashAdj) D.cashAdj = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; if (!D.plan) D.plan = { expenses: defaultPlanExpenses(), pctBuy: 50 }; if (!D.diag) D.diag = { cash: 0, days: 30 }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); renderFixed(); renderPlan(); renderCashAdj(); renderPlanTab(); renderCart(); renderDiag(); save(); }
+function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.fixed) D.fixed = defaultFixed(); if (!D.supTargets) D.supTargets = {}; if (!D.cashAdj) D.cashAdj = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; if (!D.diag) D.diag = { cash: 0, items: [] }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); renderFixed(); renderPlan(); renderCashAdj(); renderCart(); renderDiag(); renderSupLate(); save(); }
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
   t.classList.add("on");
-  ["dash", "prod", "buy", "cash", "cli", "ana", "plan", "diag", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
+  ["dash", "prod", "buy", "cash", "cli", "ana", "diag", "sync", "data"].forEach(k => document.getElementById("tab-" + k).classList.toggle("hidden", k !== t.dataset.tab));
 }));
 
 function resetProdForm() {
@@ -1830,7 +1803,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 26/11/2026 (Diagnostic)";
+  el.textContent += " · version 26/11/2026 (Diagnostic + Fournisseurs)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
@@ -2676,260 +2649,108 @@ document.getElementById("pGenAll").addEventListener("click", () => {
   alert(missing.length + " code(s) généré(s).");
 });
 
-/* ===== Plan : الربح مقابل المصاريف، وتوزيع رأس المال بين الشراء والسداد ===== */
-function defaultPlanExpenses() {
-  return [
-    { id: "e1", name: "Loyer (mensuel)", amount: 30000, months: 1 },
-    { id: "e2", name: "CNAS (Sécurité sociale)", amount: 10000, months: 1 },
-    { id: "e3", name: "Impôts (annuel)", amount: 45000, months: 12 },
-    { id: "e4", name: "Électricité (tous les 3 mois)", amount: 8000, months: 3 },
-    { id: "e5", name: "Téléphone", amount: 2000, months: 1 },
-    { id: "e6", name: "Retrait personnel", amount: 40000, months: 1 }
-  ];
+/* ===== Diagnostic : المستحقات، الحساب اليومي، والتغطية من الربح أو رأس المال ===== */
+function dgLeft(it) { return Math.round((new Date(it.due) - new Date(today())) / 86400000); }
+function dgDaily(it) { const left = dgLeft(it); return (Number(it.amount) || 0) / Math.max(1, left); }
+function renderSupLate() {
+  const late = debtList().filter(s => Math.max(0, debtOwed(s)) > 0 && s.payDate && s.payDate < today());
+  const html = late.length
+    ? `<div class="out" style="padding:8px;border:1px solid var(--border);border-radius:8px">⚠ سداد متأخر: ${late.map(s => esc(s.name) + " (" + fmt(Math.round(Math.max(0, debtOwed(s)))) + "، موعد " + esc(s.payDate) + ")").join(" · ")}</div>`
+    : `<div class="in">✔ لا يوجد سداد متأخر</div>`;
+  ["supLate", "supLate2"].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
 }
-let plEdit = null;
-function plExpDaily(e) {
-  const amount = Number(e.amount) || 0;
-  if (e.mode === "due" && e.due) {
-    const days = Math.max(1, Math.round((new Date(e.due) - new Date(today())) / 86400000));
-    return amount / days;
-  }
-  return amount / ((Number(e.months) || 1) * 30);
-}
-function plAvg() {
-  if (!document.getElementById("plFrom").value) document.getElementById("plFrom").value = addDaysStr(today(), -29);
-  if (!document.getElementById("plTo").value) document.getElementById("plTo").value = today();
-  const from = document.getElementById("plFrom").value, to = document.getElementById("plTo").value;
-  const n = Math.max(1, Math.round((new Date(to) - new Date(from)) / 86400000) + 1);
-  const list = D.sales.filter(s => s.date >= from && s.date <= to);
-  const profit = list.reduce((a, s) => a + saleProfit(s), 0);
-  const sales = list.reduce((a, s) => a + (s.amount || 0), 0);
-  return { n, from, to, profit: profit / n, sales: sales / n, totalProfit: profit };
-}
-function plResetForm() {
-  plEdit = null;
-  document.getElementById("plName").value = "";
-  document.getElementById("plAmt").value = "";
-  document.getElementById("plMonths").value = "1";
-  document.getElementById("plDue").value = "";
-  document.getElementById("plMode").value = "rec";
-  document.getElementById("plAdd").textContent = "Ajouter";
-}
-function renderPlanTab() {
-  if (!document.getElementById("plExpList")) return;
-  if (!D.plan) D.plan = { expenses: defaultPlanExpenses(), pctBuy: 50 };
-  const pctEl = document.getElementById("plPct");
-  if (pctEl.value === "") pctEl.value = D.plan.pctBuy ?? 50;
-  const pct = Math.min(100, Math.max(0, parseFloat(pctEl.value) || 0));
-
-  // expenses
-  const list = D.plan.expenses || [];
-  const expDay = list.reduce((a, e) => a + plExpDaily(e), 0);
-  document.getElementById("plExpList").innerHTML = list.length ? list.map(e => `
-    <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(e.name)}</div>
-    <div class="meta">${fmt(e.amount)} · ${e.mode === "due" ? "à payer avant le " + esc(e.due || "—") : "tous les " + e.months + " mois"} · ${fmt(Math.round(plExpDaily(e)))} / jour</div></div>
-    <div><button class="small ghost" data-plmod="${e.id}">Modifier</button>
-    <button class="small danger" data-pldel="${e.id}">Supprimer</button></div></div>`).join("")
-    : `<div class="empty">Aucune dépense</div>`;
-  document.getElementById("plExpTotal").innerHTML =
-    `<div>Total des dépenses : <strong>${fmt(Math.round(expDay))} / jour</strong> · <strong>${fmt(Math.round(expDay * 30))} / mois</strong></div>`;
-
-  // profit vs expenses
-  const a = plAvg();
-  const surplus = a.profit - expDay;
-  const cover = expDay ? Math.round(a.profit / expDay * 100) : 0;
-  document.getElementById("plSummary").innerHTML = `
-    <table style="width:100%;font-size:15px;border-collapse:collapse">
-      <tr><td style="padding:4px 0">Moyenne du bénéfice / jour (total ÷ ${a.n} jours, du ${a.from} au ${a.to})</td><td style="text-align:right">${fmt(Math.round(a.profit))}</td></tr>
-      <tr><td style="padding:4px 0">Dépenses / jour</td><td style="text-align:right">${fmt(Math.round(expDay))}</td></tr>
-      <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">${surplus >= 0 ? "Excédent / jour" : "Déficit / jour"}</td><td style="text-align:right" class="${surplus >= 0 ? "in" : "out"}">${fmt(Math.round(Math.abs(surplus)))}</td></tr>
-      <tr><td style="padding:4px 0">Couverture des dépenses par le bénéfice</td><td style="text-align:right">${cover} %</td></tr>
-    </table>
-    <div class="label" style="margin-top:6px">${surplus >= 0 ? "✔ Le bénéfice couvre les dépenses." : "⚠ Le bénéfice ne couvre pas les dépenses. Le manque: " + fmt(Math.round(-surplus)) + " / jour, à prendre du capital."}</div>`;
-
-  // split of capital
-  const capital = Math.max(0, a.sales - a.profit);
-  if (surplus < 0 && capital > 0) {
-    const share = Math.round((-surplus) / capital * 100);
-    document.getElementById("plSummary").innerHTML += `<div class="${share > 50 ? "out" : "label"}" style="margin-top:4px">${share > 50 ? "⚠ Attention : le manque représente " + share + " % du capital récupéré. Risque pour la continuité du magasin." : "Le manque représente " + share + " % du capital récupéré (à surveiller)."}</div>`;
-  }
-  const buyDay = capital * pct / 100;
-  const debtShare = capital * (100 - pct) / 100;
-  const debtDay = Math.max(0, debtShare + surplus);
-  const totalDebt = debtList().reduce((a2, s) => a2 + Math.max(0, debtOwed(s)), 0);
-  const months = debtDay > 0 ? Math.ceil(totalDebt / (debtDay * 30)) : null;
-  const usedTotal = buyDay + debtDay;
-  // schedule: payments per calendar month against the monthly debt budget
-  {
-    const budgetM = debtDay * 30;
-    const rows = debtList().filter(s => (s.payAmt || 0) > 0).sort((x, y) => (x.payDate || "9999").localeCompare(y.payDate || "9999"));
-    const unscheduled = debtList().filter(s => !(s.payAmt > 0) && debtOwed(s) > 0).map(s => s.name);
-    const byMonth = {};
-    rows.forEach(s => { const m = (s.payDate || "sans date").slice(0, 7); (byMonth[m] = byMonth[m] || []).push(s); });
-    const lines = Object.keys(byMonth).map(m => {
-      const tot = byMonth[m].reduce((a, s) => a + s.payAmt, 0);
-      const ok = tot <= budgetM + 0.5;
-      return `<div class="${ok ? "in" : "out"}" style="margin-top:6px">${m} : ${byMonth[m].map(s => esc(s.name) + " " + fmt(s.payAmt) + (s.payDate ? " le " + esc(s.payDate) : "")).join(" · ")}
-        <div>Total ${fmt(tot)} / budget ${fmt(Math.round(budgetM))} ${ok ? "✔" : "⚠ dépasse le budget : reporter " + fmt(Math.round(tot - budgetM))}</div></div>`;
-    }).join("");
-    document.getElementById("plSched").innerHTML = (lines || `<div class="empty">Aucun paiement programmé</div>`) +
-      `<div class="label" style="margin-top:8px">Règle: les paiements viennent de la part des dettes seulement. Les achats ne sont jamais réduits pour payer un fournisseur, pour garder le stock.</div>` +
-      (unscheduled.length ? `<div class="label" style="margin-top:4px">Sans date de paiement: ${unscheduled.map(esc).join(", ")}</div>` : "");
-  }
-  document.getElementById("plSplit").innerHTML = `
-    <table style="width:100%;font-size:15px;border-collapse:collapse">
-      <tr><td style="padding:4px 0">Capital récupéré / jour (ventes − bénéfice)</td><td style="text-align:right">${fmt(Math.round(capital))}</td></tr>
-      <tr><td style="padding:4px 0">→ Achats / jour (${pct} %)</td><td style="text-align:right">${fmt(Math.round(buyDay))} · ${fmt(Math.round(buyDay * 30))} / mois</td></tr>
-      <tr><td style="padding:4px 0">→ Dettes / jour (${100 - pct} % ${surplus >= 0 ? "+ excédent" : "− déficit"})</td><td style="text-align:right">${fmt(Math.round(debtDay))} · ${fmt(Math.round(debtDay * 30))} / mois</td></tr>
-      <tr><td style="padding:4px 0">Part réelle vers les achats / vers les dettes</td><td style="text-align:right">${usedTotal ? Math.round(buyDay / usedTotal * 100) : 0} % / ${usedTotal ? Math.round(debtDay / usedTotal * 100) : 0} %</td></tr>
-      <tr><td style="padding:4px 0">Total des dettes fournisseurs</td><td style="text-align:right">${fmt(Math.round(totalDebt))}</td></tr>
-      <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">Durée pour payer toutes les dettes</td><td style="text-align:right">${months ? months + " mois" : "—"}</td></tr>
-    </table>
-    ${surplus < 0 && debtShare < -surplus ? `<div class="out" style="margin-top:6px">⚠ Le déficit dépasse la part des dettes : il faut plus de ventes ou moins de dépenses.</div>` : ""}`;
-}
-document.getElementById("plAdd").addEventListener("click", () => {
-  const name = document.getElementById("plName").value.trim();
-  const amount = parseFloat(document.getElementById("plAmt").value);
-  const months = Math.max(1, parseInt(document.getElementById("plMonths").value, 10) || 1);
-  const due = document.getElementById("plDue").value;
-  const mode = document.getElementById("plMode").value;
-  if (!name) return alert("Mets le nom de la dépense.");
-  if (mode === "due" && !due) return alert("Mets la date limite de paiement.");
-  if (!(amount > 0)) return alert("Mets le montant.");
-  if (plEdit) {
-    const e = D.plan.expenses.find(x => x.id === plEdit);
-    if (e) Object.assign(e, { name, amount, months, due, mode });
-  } else {
-    D.plan.expenses.push({ id: "e" + uid(), name, amount, months, due, mode });
-  }
-  plResetForm();
-  renderAll();
-});
-document.getElementById("plCancel").addEventListener("click", plResetForm);
-document.getElementById("plExpList").addEventListener("click", e => {
-  const mod = e.target.dataset.plmod, del = e.target.dataset.pldel;
-  if (mod) {
-    const x = D.plan.expenses.find(v => v.id === mod);
-    if (!x) return;
-    plEdit = mod;
-    document.getElementById("plName").value = x.name;
-    document.getElementById("plAmt").value = x.amount;
-    document.getElementById("plMonths").value = x.months;
-    document.getElementById("plDue").value = x.due || "";
-    document.getElementById("plMode").value = x.mode || "rec";
-    document.getElementById("plAdd").textContent = "Enregistrer la modification";
-    document.getElementById("plName").focus();
-    return;
-  }
-  if (del) {
-    if (e.target.dataset.armed !== "1") { e.target.dataset.armed = "1"; e.target.textContent = "Confirmer ?"; return; }
-    D.plan.expenses = D.plan.expenses.filter(v => v.id !== del);
-    renderAll();
-  }
-});
-document.getElementById("plFrom").addEventListener("change", renderAll);
-document.getElementById("plTo").addEventListener("change", renderAll);
-document.getElementById("plPct").addEventListener("input", () => {
-  D.plan.pctBuy = Math.min(100, Math.max(0, parseFloat(document.getElementById("plPct").value) || 0));
-  renderAll();
-});
-
-document.getElementById("invValidate").addEventListener("click", () => document.getElementById("sSave").click());
-
-/* ===== Diagnostic: الأرباح مقابل المصاريف، وتوزيع الأموال بين الأقساط والشراء ===== */
-function dgSave(list) { try { localStorage.setItem(DEBT_KEY, JSON.stringify(list)); } catch (e) {} }
 function renderDiag() {
-  if (!document.getElementById("dgSup")) return;
-  if (!D.diag) D.diag = { cash: 0, days: 30 };
-  const cashEl = document.getElementById("dgCash"), daysEl = document.getElementById("dgDays");
+  if (!document.getElementById("dgTable")) return;
+  if (!D.diag) D.diag = { cash: 0, items: [] };
+  if (!D.diag.items) D.diag.items = [];
+  const cashEl = document.getElementById("dgCash");
   if (cashEl.value === "" && D.diag.cash) cashEl.value = D.diag.cash;
-  if (daysEl.value === "") daysEl.value = D.diag.days || 30;
-  const n = Math.max(1, parseInt(daysEl.value, 10) || 30);
-  D.diag.days = n;
   D.diag.cash = parseFloat(cashEl.value) || 0;
 
-  const sups = debtList();
-  document.getElementById("dgSup").innerHTML = sups.length ? sups.map((s, i) => {
-    const owed = Math.max(0, debtOwed(s));
-    return `<div class="item" style="padding:6px 0;align-items:center"><div style="flex:1"><div class="name">${esc(s.name)}</div><div class="meta">dette : ${fmt(owed)}</div></div>
-      <div><input type="number" data-dginst="${i}" value="${s.payAmt || ""}" placeholder="قسط" style="width:100px"> DA
-      <input type="number" data-dgday="${i}" min="1" max="31" value="${s.dueDay || ""}" placeholder="يوم" style="width:60px"></div></div>`;
-  }).join("") : `<div class="empty">Aucun fournisseur</div>`;
+  const items = [...D.diag.items].sort((a, b) => (a.due || "").localeCompare(b.due || ""));
+  const A = items.reduce((a, it) => a + dgDaily(it), 0);
+  document.getElementById("dgTable").innerHTML = items.length ? `
+    <table style="width:100%;font-size:15px;border-collapse:collapse">
+      <tr style="text-align:right;border-bottom:1px solid var(--border)"><th style="padding:6px 0">Nom</th><th>Montant</th><th>Date</th><th>Jours</th><th>Par jour</th><th></th></tr>
+      ${items.map(it => {
+        const left = dgLeft(it);
+        return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0">${esc(it.name)}</td><td style="text-align:right">${fmt(it.amount)}</td><td>${esc(it.due)}</td>
+          <td style="text-align:right" class="${left <= 0 ? "out" : ""}">${left <= 0 ? "échu" : left}</td>
+          <td style="text-align:right"><strong>${fmt(Math.round(dgDaily(it)))}</strong></td>
+          <td><button class="small danger" data-dgdel="${it.id}">Supprimer</button></td></tr>`;
+      }).join("")}
+      <tr style="font-weight:700"><td style="padding:6px 0">Total</td><td style="text-align:right">${fmt(items.reduce((a, it) => a + (Number(it.amount) || 0), 0))}</td><td></td><td></td><td style="text-align:right">${fmt(Math.round(A))}</td><td></td></tr>
+    </table>` : `<div class="empty">Aucun montant. Ajoute le premier.</div>`;
 
-  const exps = D.plan.expenses || [];
-  document.getElementById("dgExpList").innerHTML = exps.length ? exps.map(e => `
-    <div class="item" style="padding:6px 0"><div style="flex:1"><div class="name">${esc(e.name)}</div>
-    <div class="meta">${fmt(e.amount)} · ${e.mode === "due" ? "à payer avant le " + esc(e.due || "—") : "tous les " + e.months + " mois"} · ${fmt(Math.round(plExpDaily(e)))} / jour</div></div>
-    <button class="small danger" data-dgdel="${e.id}">Supprimer</button></div>`).join("") : `<div class="empty">Aucune dépense</div>`;
-
+  // profit average over the last 30 days
+  const n = 30;
   const from = addDaysStr(today(), -(n - 1));
   const list = D.sales.filter(s => s.date >= from && s.date <= today());
-  const profitTot = list.reduce((a, s) => a + saleProfit(s), 0);
-  const salesTot = list.reduce((a, s) => a + (s.amount || 0), 0);
-  const P = profitTot / n, S = salesTot / n, C = Math.max(0, S - P);
-  const E = exps.reduce((a, e) => a + plExpDaily(e), 0);
-  const Im = sups.reduce((a, s) => a + (s.payAmt || 0), 0), I = Im / 30;
-  const surplus = P - E;
-  const instFromProfit = Math.min(Math.max(surplus, 0), I);
-  const instFromCapital = Math.max(0, I - instFromProfit);
-  const extra = Math.max(0, surplus - I);
-  const buy = Math.max(0, C - instFromCapital);
-  const totalDebt = sups.reduce((a, s) => a + Math.max(0, debtOwed(s)), 0);
-  const monthlyDebtPay = (I + extra) * 30;
-  const months = monthlyDebtPay > 0 ? Math.ceil(totalDebt / monthlyDebtPay) : null;
-  const cov = E ? Math.round(P / E * 100) : 0;
-  const row = (a, b, c = "") => `<tr><td style="padding:4px 0">${a}</td><td style="text-align:right" class="${c}">${b}</td></tr>`;
-  document.getElementById("dgResult").innerHTML = `
+  const P = list.reduce((a, s) => a + saleProfit(s), 0) / n;
+  const cash = D.diag.cash || 0;
+  const coverP = Math.min(A, P);
+  const gap = Math.max(0, A - P);
+  const surplus = Math.max(0, P - A);
+  const daysCash = gap > 0 && cash > 0 ? Math.floor(cash / gap) : null;
+
+  let text = "";
+  if (!items.length) {
+    text = "أدخل المستحقات (الاسم والمبلغ وتاريخ الدفع) باش نحسبو المبلغ اللي خاص تلمو في كل يوم.";
+  } else if (gap <= 0) {
+    text = `الربح اليومي (${fmt(Math.round(P))}) كيغطي كل المستحقات اليومية (${fmt(Math.round(A))}). الفائض ${fmt(Math.round(surplus))} في اليوم.`;
+  } else {
+    text = `المستحقات كتطلب ${fmt(Math.round(A))} في اليوم، والربح اليومي ${fmt(Math.round(P))} كيغطي ${fmt(Math.round(coverP))} فقط. ` +
+      `الفرق ${fmt(Math.round(gap))} في اليوم خاصو يجي من رأس المال، أي حوالي ${fmt(Math.round(gap * 30))} في الشهر.` +
+      (daysCash !== null ? ` الصندوق الحالي (${fmt(cash)}) يكفي لحوالي ${daysCash} يوم بهاد الوتيرة.` : "");
+  }
+  document.getElementById("dgSummary").innerHTML = `
     <table style="width:100%;font-size:15px;border-collapse:collapse">
-      ${row("Ventes / jour (" + n + " jours)", fmt(Math.round(S)))}
-      ${row("Bénéfice / jour", fmt(Math.round(P)))}
-      ${row("Capital récupéré / jour (ventes − bénéfice)", fmt(Math.round(C)))}
-      ${row("Dépenses / jour", fmt(Math.round(E)))}
-      ${row("Couverture des dépenses par le bénéfice", cov + " %", cov >= 100 ? "in" : "out")}
-      ${row("Excédent / déficit / jour", fmt(Math.round(surplus)), surplus >= 0 ? "in" : "out")}
+      <tr><td style="padding:4px 0">Bénéfice moyen / jour (30 jours)</td><td style="text-align:right">${fmt(Math.round(P))}</td></tr>
+      <tr><td style="padding:4px 0">À mettre de côté / jour</td><td style="text-align:right"><strong>${fmt(Math.round(A))}</strong></td></tr>
+      <tr><td style="padding:4px 0">Couvert par le bénéfice</td><td style="text-align:right" class="in">${fmt(Math.round(coverP))}</td></tr>
+      <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">${gap > 0 ? "Manque à prendre du capital / jour" : "Excédent / jour"}</td>
+        <td style="text-align:right" class="${gap > 0 ? "out" : "in"}">${fmt(Math.round(gap > 0 ? gap : surplus))}</td></tr>
     </table>
-    <table style="width:100%;font-size:15px;border-collapse:collapse;margin-top:8px">
-      ${row("Total des échéances fournisseurs / mois", fmt(Math.round(Im)))}
-      ${row("→ payées par le bénéfice / jour", fmt(Math.round(instFromProfit)))}
-      ${row("→ payées par le capital / jour", fmt(Math.round(instFromCapital)), instFromCapital > 0 ? "out" : "")}
-      ${row("Excédent versé en plus aux dettes / jour", fmt(Math.round(extra)))}
-      ${row("<strong>Montant pour payer les dettes / mois</strong>", "<strong>" + fmt(Math.round(monthlyDebtPay)) + "</strong>")}
-      ${row("<strong>Montant pour les achats / mois</strong>", "<strong>" + fmt(Math.round(buy * 30)) + "</strong>")}
-      ${row("Dette totale fournisseurs", fmt(Math.round(totalDebt)))}
-      ${row("Durée pour tout payer", months ? months + " mois" : "—")}
-    </table>
-    ${instFromCapital > 0 ? `<div class="out" style="margin-top:6px">⚠ Les échéances dépassent le bénéfice: ${fmt(Math.round(instFromCapital * 30))} / mois viennent du capital. Risque pour le stock.</div>` : ""}
-    ${buy < C ? `<div class="out" style="margin-top:4px">⚠ Les achats (${fmt(Math.round(buy))} / jour) sont inférieurs au capital récupéré (${fmt(Math.round(C))}): le stock diminue.</div>` : ""}`;
+    ${gap > 0 ? `<div class="out" style="margin-top:8px">⚠ تنبيه: الربح ما كيكفيش. رأس المال غادي يتخصم ${fmt(Math.round(gap))} في اليوم. راقب المخزون ولا تزيد السحب.</div>` : ""}
+    <div style="margin-top:8px;line-height:1.8">${text}</div>`;
 }
-document.getElementById("dgSup").addEventListener("change", e => {
-  const list = debtList();
-  const i = e.target.dataset.dginst, j = e.target.dataset.dgday;
-  if (i !== undefined && list[+i]) list[+i].payAmt = parseFloat(e.target.value) || 0;
-  if (j !== undefined && list[+j]) list[+j].dueDay = parseInt(e.target.value, 10) || 0;
-  dgSave(list); renderDiag();
-});
-document.getElementById("dgCash").addEventListener("input", () => { D.diag.cash = parseFloat(document.getElementById("dgCash").value) || 0; renderDiag(); });
-document.getElementById("dgDays").addEventListener("input", renderDiag);
-document.getElementById("dgAddExp").addEventListener("click", () => {
-  const name = document.getElementById("dgName").value.trim();
-  const amount = parseFloat(document.getElementById("dgAmt").value);
-  const mode = document.getElementById("dgMode").value;
-  const months = Math.max(1, parseInt(document.getElementById("dgMonths").value, 10) || 1);
-  const due = document.getElementById("dgDue").value;
-  if (!name) return alert("Mets le nom de la dépense.");
-  if (!(amount > 0)) return alert("Mets le montant.");
-  if (mode === "due" && !due) return alert("Mets la date de paiement.");
-  D.plan.expenses.push({ id: "e" + uid(), name, amount, months, due, mode });
-  document.getElementById("dgName").value = ""; document.getElementById("dgAmt").value = "";
+document.getElementById("dgSAdd").addEventListener("click", () => {
+  const name = document.getElementById("dgSName").value.trim();
+  const amount = parseFloat(document.getElementById("dgSAmt").value);
+  const due = document.getElementById("dgSDue").value;
+  if (!name) return alert("Mets le nom du fournisseur.");
+  if (!(amount > 0)) return alert("Mets le montant dû.");
+  if (!due) return alert("Mets la date de paiement.");
+  if (!D.diag.items) D.diag.items = [];
+  D.diag.items.push({ id: "g" + uid(), name: "مورد: " + name, amount, due });
+  document.getElementById("dgSName").value = ""; document.getElementById("dgSAmt").value = ""; document.getElementById("dgSDue").value = "";
   renderAll();
 });
-document.getElementById("dgExpList").addEventListener("click", e => {
+document.getElementById("dgAdd").addEventListener("click", () => {
+  const name = document.getElementById("dgName").value.trim();
+  const amount = parseFloat(document.getElementById("dgAmt").value);
+  const due = document.getElementById("dgDue").value;
+  if (!name) return alert("Mets le nom.");
+  if (!(amount > 0)) return alert("Mets le montant dû.");
+  if (!due) return alert("Mets la date de paiement.");
+  if (!D.diag.items) D.diag.items = [];
+  D.diag.items.push({ id: "g" + uid(), name, amount, due });
+  document.getElementById("dgName").value = ""; document.getElementById("dgAmt").value = ""; document.getElementById("dgDue").value = "";
+  renderAll();
+});
+document.getElementById("dgTable").addEventListener("click", e => {
   const id = e.target.dataset.dgdel;
   if (!id) return;
   if (e.target.dataset.armed !== "1") { e.target.dataset.armed = "1"; e.target.textContent = "Confirmer ?"; return; }
-  D.plan.expenses = D.plan.expenses.filter(x => x.id !== id);
+  D.diag.items = D.diag.items.filter(x => x.id !== id);
   renderAll();
 });
+document.getElementById("dgCash").addEventListener("input", () => { D.diag.cash = parseFloat(document.getElementById("dgCash").value) || 0; renderDiag(); });
+
+/* Sauvegarde: boutons relais vers les actions existantes */
+document.getElementById("exportMirror").addEventListener("click", () => document.getElementById("exportBtn").click());
+document.getElementById("importMirror").addEventListener("click", () => document.getElementById("importBtn").click());
+document.getElementById("resetMirror").addEventListener("click", () => document.getElementById("resetBtn").click());
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
@@ -3206,13 +3027,13 @@ document.getElementById("supList").addEventListener("click", e => {
     document.getElementById("fDebt").value = 0;
     document.getElementById("fPayDate").value = s.payDate || "";
     document.getElementById("fPayAmt").value = s.payAmt || "";
-    document.querySelector('.dtab[data-tab="add"]').click();
+    const dAdd = document.querySelector('.dtab[data-tab="add"]'); if (dAdd) dAdd.click();
   }
   if (t.dataset.fix) {
     const s = S.find(x => x.id === t.dataset.fix);
     document.getElementById("cSup").value = s.id;
     document.getElementById("cAmt").value = remaining(s);
-    document.querySelector('.dtab[data-tab="add"]').click();
+    const dAdd = document.querySelector('.dtab[data-tab="add"]'); if (dAdd) dAdd.click();
   }
   if (t.dataset.del) {
     const s = S.find(x => x.id === t.dataset.del);
