@@ -438,6 +438,10 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <h2>الصندوق</h2>
     <div class="row" style="margin-top:0"><div class="field"><label for="dgCash">Caisse réelle comptée (DA)</label><input type="number" id="dgCash" min="0" step="100"></div></div>
   </div>
+  <div class="card">
+    <h2>فترة حساب المتوسط</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="dgFrom">Du</label><input type="date" id="dgFrom"></div><div class="field"><label for="dgTo">Au</label><input type="date" id="dgTo"></div></div>
+  </div>
   <div class="card"><h2>الخلاصة</h2><div id="dgSummary"></div></div>
 </section>
 <section id="tab-sync" class="hidden">
@@ -1803,7 +1807,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 26/11/2026 (Diagnostic + Fournisseurs)";
+  el.textContent += " · version 26/11/2026 (Diagnostic : période)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
@@ -2683,9 +2687,12 @@ function renderDiag() {
     </table>` : `<div class="empty">Aucun montant. Ajoute le premier.</div>`;
 
   // profit average over the last 30 days
-  const n = 30;
-  const from = addDaysStr(today(), -(n - 1));
-  const list = D.sales.filter(s => s.date >= from && s.date <= today());
+  const fromEl = document.getElementById("dgFrom"), toEl = document.getElementById("dgTo");
+  if (!fromEl.value) fromEl.value = addDaysStr(today(), -29);
+  if (!toEl.value) toEl.value = today();
+  const from = fromEl.value, to = toEl.value;
+  const n = Math.max(1, Math.round((new Date(to) - new Date(from)) / 86400000) + 1);
+  const list = D.sales.filter(s => s.date >= from && s.date <= to);
   const P = list.reduce((a, s) => a + saleProfit(s), 0) / n;
   const cash = D.diag.cash || 0;
   const coverP = Math.min(A, P);
@@ -2705,7 +2712,7 @@ function renderDiag() {
   }
   document.getElementById("dgSummary").innerHTML = `
     <table style="width:100%;font-size:15px;border-collapse:collapse">
-      <tr><td style="padding:4px 0">Bénéfice moyen / jour (30 jours)</td><td style="text-align:right">${fmt(Math.round(P))}</td></tr>
+      <tr><td style="padding:4px 0">Bénéfice moyen / jour (${n} jours, du ${from} au ${to})</td><td style="text-align:right">${fmt(Math.round(P))}</td></tr>
       <tr><td style="padding:4px 0">À mettre de côté / jour</td><td style="text-align:right"><strong>${fmt(Math.round(A))}</strong></td></tr>
       <tr><td style="padding:4px 0">Couvert par le bénéfice</td><td style="text-align:right" class="in">${fmt(Math.round(coverP))}</td></tr>
       <tr style="font-weight:700;border-top:1px solid var(--border)"><td style="padding:6px 0">${gap > 0 ? "Manque à prendre du capital / jour" : "Excédent / jour"}</td>
@@ -2746,6 +2753,8 @@ document.getElementById("dgTable").addEventListener("click", e => {
   renderAll();
 });
 document.getElementById("dgCash").addEventListener("input", () => { D.diag.cash = parseFloat(document.getElementById("dgCash").value) || 0; renderDiag(); });
+document.getElementById("dgFrom").addEventListener("change", renderDiag);
+document.getElementById("dgTo").addEventListener("change", renderDiag);
 
 /* Sauvegarde: boutons relais vers les actions existantes */
 document.getElementById("exportMirror").addEventListener("click", () => document.getElementById("exportBtn").click());

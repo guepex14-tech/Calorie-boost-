@@ -1,4 +1,4 @@
-const CACHE = "calorie-boost-v14";
+const CACHE = "calorie-boost-v15";
 const FILES = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
