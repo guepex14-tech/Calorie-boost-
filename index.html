@@ -425,7 +425,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
 <section id="tab-diag" class="hidden">
   <div class="card">
     <h2>إدخال مستحق</h2>
-    <div class="row" style="margin-top:0"><div class="field"><label for="dgName">Nom</label><input type="text" id="dgName" placeholder="ex : Loyer"></div><div class="field"><label for="dgAmt">Montant dû (DA)</label><input type="number" id="dgAmt" min="0" step="100"></div><div class="field"><label for="dgDue">Date de paiement</label><input type="date" id="dgDue"></div></div>
+    <div class="row" style="margin-top:0"><div class="field"><label for="dgName">Nom de la dépense</label><select id="dgName"><option value="الكراء">الكراء</option><option value="الضرائب">الضرائب</option><option value="الضمان الاجتماعي (CNAS)">الضمان الاجتماعي (CNAS)</option><option value="الكهرباء">الكهرباء</option><option value="الهاتف">الهاتف</option><option value="الإنترنت">الإنترنت</option><option value="الماء">الماء</option><option value="السحب الشخصي">السحب الشخصي</option><option value="التغليف">التغليف</option><option value="النقل">النقل</option><option value="التسويق والإعلانات">التسويق والإعلانات</option><option value="الصيانة والتنظيف">الصيانة والتنظيف</option><option value="المحاسب">المحاسب</option><option value="الرسوم البنكية">الرسوم البنكية</option><option value="أجرة المساعد">أجرة المساعد</option><option value="مصاريف طارئة">مصاريف طارئة</option><option value="أخرى">أخرى</option></select><input type="text" id="dgNameOther" placeholder="اكتب الاسم" style="display:none;margin-top:6px"></div><div class="field"><label for="dgAmt">Montant dû (DA)</label><input type="number" id="dgAmt" min="0" step="100"></div><div class="field"><label for="dgDue">Date de paiement</label><input type="date" id="dgDue"></div></div>
     <div class="row"><div class="field"><label for="dgType">Type</label><select id="dgType"><option value="due">Non récurrent (une fois, avant une date)</option><option value="rec">Récurrent</option></select></div><div class="field"><label for="dgMonths">Tous les (mois)</label><input type="number" id="dgMonths" min="1" step="1" value="1"></div></div>
     <div class="row"><button id="dgAdd">Ajouter</button></div>
   </div>
@@ -1812,7 +1812,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 26/11/2026 (Diagnostic : صندوق من Caisse)";
+  el.textContent += " · version 26/11/2026 (Diagnostic : قائمة المصاريف)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
@@ -2701,6 +2701,15 @@ function renderDiag() {
   const list = D.sales.filter(s => s.date >= from && s.date <= to);
   const P = list.reduce((a, s) => a + saleProfit(s), 0) / n;
   const cash = cashNow;
+  // الحد الأدنى للصندوق: 10 أيام من المصاريف اليومية
+  const minCash = 10 * A;
+  const cashDays = A > 0 ? Math.floor(cash / A) : null;
+  document.getElementById("dgCashBox").innerHTML =
+    "الصندوق (من تبويب Caisse): <strong>" + dgN(cash) + "</strong><br>" +
+    "الحد الأدنى (10 أيام من المصاريف): <strong>" + dgN(minCash) + "</strong><br>" +
+    (cash < minCash
+      ? '<span class="out">⚠ الصندوق تحت الحد الأدنى. خاصك تأجل جزء من السداد وتركز على تحصيل ديون الزبناء.</span>'
+      : '<span class="in">✔ الصندوق فوق الحد الأدنى' + (cashDays !== null ? ' (يكفي ' + cashDays + ' يوم من المصاريف)' : '') + '.</span>');
   const covered = Math.min(A, P);
   const gap = Math.max(0, A - P);
   const daysCash = gap > 0 && cash > 0 ? Math.floor(cash / gap) : null;
@@ -2737,7 +2746,8 @@ document.getElementById("dgSAdd").addEventListener("click", () => {
   renderAll();
 });
 document.getElementById("dgAdd").addEventListener("click", () => {
-  const name = document.getElementById("dgName").value.trim();
+  let name = document.getElementById("dgName").value;
+  if (name === "أخرى") name = document.getElementById("dgNameOther").value.trim();
   const amount = parseFloat(document.getElementById("dgAmt").value);
   const due = document.getElementById("dgDue").value;
   const kind = document.getElementById("dgType").value;
@@ -2747,7 +2757,7 @@ document.getElementById("dgAdd").addEventListener("click", () => {
   if (kind === "due" && !due) return alert("Mets la date de paiement.");
   if (!D.diag.items) D.diag.items = [];
   D.diag.items.push({ id: "g" + uid(), name, amount, due, kind, months });
-  document.getElementById("dgName").value = ""; document.getElementById("dgAmt").value = ""; document.getElementById("dgDue").value = "";
+  document.getElementById("dgName").selectedIndex = 0; document.getElementById("dgNameOther").value = ""; document.getElementById("dgAmt").value = ""; document.getElementById("dgDue").value = "";
   renderAll();
 });
 document.getElementById("dgTable").addEventListener("click", e => {
@@ -2758,6 +2768,7 @@ document.getElementById("dgTable").addEventListener("click", e => {
   renderAll();
 });
 document.getElementById("dgFrom").addEventListener("change", renderDiag);
+document.getElementById("dgName").addEventListener("change", () => { document.getElementById("dgNameOther").style.display = document.getElementById("dgName").value === "أخرى" ? "" : "none"; });
 document.getElementById("dgType").addEventListener("change", () => { document.getElementById("dgDue").closest(".field").style.display = document.getElementById("dgType").value === "due" ? "" : "none"; });
 document.getElementById("dgTo").addEventListener("change", renderDiag);
 
