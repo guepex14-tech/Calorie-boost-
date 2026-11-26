@@ -410,7 +410,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
   <div class="card"><h2>Bénéfice contre charges fixes</h2>
     <div id="anaFixedCmp"></div>
   </div>
-  <div class="card"><h2>Charges fixes</h2>
+  <div class="card" style="display:none"><h2>Charges fixes</h2>
     <div class="label" style="margin-bottom:6px">Total : <strong id="fxTotal"></strong></div>
     <div id="fxList"></div>
     <div class="row"><div class="field"><label for="fxName">Charge</label><input type="text" id="fxName" placeholder="ex : Loyer"></div><div class="field"><label for="fxAmt">Montant (DA)</label><input type="number" id="fxAmt" min="0" step="100"></div><div class="field"><label for="fxPer">Période</label><select id="fxPer"><option value="mois">par mois</option><option value="trim">tous les 3 mois</option><option value="an">par an</option></select></div></div>
@@ -428,6 +428,12 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="row" style="margin-top:0"><div class="field"><label for="dgName">Nom de la dépense</label><select id="dgName"><option value="الكراء">الكراء</option><option value="الضرائب">الضرائب</option><option value="الضمان الاجتماعي (CNAS)">الضمان الاجتماعي (CNAS)</option><option value="الكهرباء">الكهرباء</option><option value="الهاتف">الهاتف</option><option value="الإنترنت">الإنترنت</option><option value="الماء">الماء</option><option value="السحب الشخصي">السحب الشخصي</option><option value="التغليف">التغليف</option><option value="النقل">النقل</option><option value="التسويق والإعلانات">التسويق والإعلانات</option><option value="الصيانة والتنظيف">الصيانة والتنظيف</option><option value="المحاسب">المحاسب</option><option value="الرسوم البنكية">الرسوم البنكية</option><option value="أجرة المساعد">أجرة المساعد</option><option value="مصاريف طارئة">مصاريف طارئة</option><option value="أخرى">أخرى</option></select><input type="text" id="dgNameOther" placeholder="اكتب الاسم" style="display:none;margin-top:6px"></div><div class="field"><label for="dgAmt">Montant dû (DA)</label><input type="number" id="dgAmt" min="0" step="100"></div><div class="field"><label for="dgDue">Date de paiement</label><input type="date" id="dgDue"></div></div>
     <div class="row"><div class="field"><label for="dgType">Type</label><select id="dgType"><option value="due">Non récurrent (une fois, avant une date)</option><option value="rec">Récurrent</option></select></div><div class="field"><label for="dgMonths">Tous les (mois)</label><input type="number" id="dgMonths" min="1" step="1" value="1"></div></div>
     <div class="row"><button id="dgAdd">Ajouter</button></div>
+  </div>
+  <div class="card">
+    <h2>أقساط الموردين (تحدد هنا)</h2>
+    <div id="dgInst"></div>
+    <div class="row"><button id="dgInstSave">حفظ الأقساط</button></div>
+    <div class="label">تغيير القسط أو اليوم هنا ما يبدلش الدين، غير للتخطيط.</div>
   </div>
   <div class="card">
     <h2>ديون الموردين (للتخطيط فقط)</h2>
@@ -511,7 +517,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="card stat"><div class="label">Fournisseurs en retard</div><div class="big" id="kLate">—</div></div>
     <div class="card stat"><div class="label">Mois restants (plan)</div><div class="big" id="kMonths">—</div></div>
   </div>
-  <div class="card">
+  <div class="card" style="display:none">
     <h2>Plan de remboursement</h2>
     <div class="row" style="margin-top:0">
       <div class="field"><label for="planMonths">Nombre de mois</label><input type="number" id="planMonths" min="1" value="6"></div>
@@ -679,7 +685,7 @@ function renderMoves() {
   }).join("") || `<div class="empty">Aucun mouvement</div>`;
 }
 
-function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.fixed) D.fixed = defaultFixed(); if (!D.supTargets) D.supTargets = {}; if (!D.cashAdj) D.cashAdj = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; if (!D.diag) D.diag = { cash: 0, items: [] }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); renderFixed(); renderPlan(); renderCashAdj(); renderCart(); renderDiag(); renderSupLate(); save(); }
+function renderAll() { if (!D.receipts) D.receipts = []; if (!D.customers) D.customers = []; if (!D.wish) D.wish = []; if (!D.fixed) D.fixed = defaultFixed(); if (!D.supTargets) D.supTargets = {}; if (!D.cashAdj) D.cashAdj = []; if (!D.sales) D.sales = []; if (!D.expenses) D.expenses = []; if (!D.cash) D.cash = { date: today(), balance: 0 }; if (!D.diag) D.diag = { cash: 0, items: [] }; renderDash(); renderProducts(); renderMoves(); renderReceipts(); renderSales(); renderCash(); renderControl(); renderCustomers(); renderAnalysis(); renderPeaks(); renderWish(); renderFixed(); renderPlan(); renderCashAdj(); renderCart(); renderDiag(); renderSupLate(); renderInst(); save(); }
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
@@ -1167,7 +1173,8 @@ function saleProfit(s) {
   return r2(s.amount - s.qty * (p ? p.buy || 0 : 0));
 }
 function fixedMonthTotal() {
-  return (D.fixed || []).reduce((a, f) => a + fixedMonthly(f), 0);
+  // المصدر الوحيد للمصاريف: مستحقات Diagnostic (شهرياً = اليومي × 30)
+  return ((D.diag && D.diag.items) || []).reduce((a, it) => a + dgDaily(it) * 30, 0);
 }
 function otherExpensesBetween(a, b) {
   return D.expenses.filter(e => e.date >= a && e.date <= b && !String(e.label).startsWith("[fixe]")).reduce((x, e) => x + e.amount, 0);
@@ -1814,7 +1821,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 26/11/2026 (Diagnostic : زر احسب)";
+  el.textContent += " · version 26/11/2026 (تنظيم: Diagnostic مركز)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
@@ -2020,12 +2027,10 @@ function salesBetween(a, b) { return D.sales.filter(s => s.date >= a && s.date <
 function expensesBetween(a, b) { return D.expenses.filter(e => e.date >= a && e.date <= b).reduce((x, e) => x + e.amount, 0); }
 function debtOwed(s) { return Math.max(0, s.debts.reduce((a, d) => a + d.amount, 0) - s.payments.reduce((a, p) => a + p.amount, 0)); }
 function debtMinOf(s) {
+  // قاعدة واحدة: القسط الذي تحدده أنت في Diagnostic، بحد أقصى الدين المتبقي
   const rem = debtOwed(s);
   if (rem <= 0) return 0;
-  if (s.fixed) return Math.min(s.fixed, rem);
-  const pct = s.pct ? s.pct : (rem > 300000 ? 5 : rem >= 50000 ? 10 : 70);
-  const amt = Math.ceil(rem * pct / 100);
-  return s.cap ? Math.min(amt, s.cap) : amt;
+  return Math.min(Number(s.payAmt) || 0, rem);
 }
 function nextDueDate(s) {
   const now = new Date(); const day = s.dueDay || 10;
@@ -2103,7 +2108,7 @@ function renderAnalysis() {
   const last30 = salesBetween(from30, t);
   const cashAvg = last30.filter(s => !s.credit).reduce((a, s) => a + s.amount, 0) / 30;
   const expAvg = D.expenses.filter(e => e.date >= from30 && e.date <= t && !String(e.label).startsWith("[fixe]")).reduce((a, e) => a + e.amount, 0) / 30;
-  const fixedTotal = (D.fixed || []).reduce((a, f) => a + fixedMonthly(f), 0);
+  const fixedTotal = fixedMonthTotal();
   const supplierMonthly = debtList().reduce((a, s) => a + debtMinOf(s), 0);
   const cash = cashBalance().balance;
   const forecast = Math.round(cash + cashAvg * 30 - expAvg * 30 - fixedTotal - supplierMonthly);
@@ -2821,6 +2826,30 @@ function renderAlloc() {
     (missing > 0 ? `<div class="out" style="margin-top:6px">⚠ السداد ناقص ${dgN(missing)} في اليوم، الموردين غادي يسالو. تفاوض على جدولة قبل ما يتأخرو.</div>` : (T > 0 ? `<div class="in" style="margin-top:6px">✔ السداد للموردين مغطى.</div>` : `<div class="label" style="margin-top:6px">لم تحدد أقساط الموردين بعد.</div>`)) +
     (shortfall > 0 ? `<div class="out" style="margin-top:6px">⚠ الربح ما غطاش المصاريف، الفرق ${dgN(shortfall)} في اليوم من رأس المال.</div>` : "");
 }
+
+/* ===== أقساط الموردين: تُحدد في Diagnostic فقط (حقول تخطيط، لا تغيّر الدين) ===== */
+function renderInst() {
+  const box = document.getElementById("dgInst");
+  if (!box) return;
+  const list = debtList().filter(s => Math.max(0, debtOwed(s)) > 0);
+  box.innerHTML = list.length ? list.map(s => `
+    <div class="item" style="padding:6px 0;align-items:center"><div style="flex:1"><div class="name">${esc(s.name)}</div><div class="meta">الدين: ${dgN(debtOwed(s))}</div></div>
+    <div><input type="number" data-inst="${s.id}" value="${s.payAmt || ""}" placeholder="القسط" style="width:100px"> دج
+    <input type="number" data-day="${s.id}" min="1" max="31" value="${s.dueDay || ""}" placeholder="اليوم" style="width:60px"></div></div>`).join("")
+    : `<div class="empty">لا توجد ديون موردين</div>`;
+}
+document.getElementById("dgInstSave").addEventListener("click", () => {
+  const list = debtList();
+  document.querySelectorAll("[data-inst]").forEach(inp => {
+    const s = list.find(x => x.id === inp.dataset.inst); if (s) s.payAmt = parseFloat(inp.value) || 0;
+  });
+  document.querySelectorAll("[data-day]").forEach(inp => {
+    const s = list.find(x => x.id === inp.dataset.day); if (s) s.dueDay = parseInt(inp.value, 10) || 0;
+  });
+  try { localStorage.setItem(DEBT_KEY, JSON.stringify(list)); } catch (e) {}
+  renderAll();
+  alert("تم حفظ الأقساط.");
+});
 
 D = load();
 /* Inventaire 87 produits : appliqué une seule fois sur cet appareil (ventes, dettes et paiements inchangés) */
