@@ -453,6 +453,13 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;margin:18px 0 28px}
     <div class="row" style="margin-top:0"><button id="dgCalc">🧮 احسب</button></div>
     <div id="dgSummary"></div></div>
   <div class="card">
+    <h2>استشارة قبل أي صرف</h2>
+    <div class="row" style="margin-top:0"><div class="field"><label for="dgOp">العملية</label><select id="dgOp"><option value="buy">شراء بضاعة</option><option value="pay">دفع لمورد</option><option value="draw">سحب شخصي</option><option value="other">مصروف آخر</option></select></div><div class="field"><label for="dgOpAmt">المبلغ (دج)</label><input type="number" id="dgOpAmt" min="0" step="100"></div></div>
+    <div class="row"><button id="dgAsk">استشر البرنامج</button><button class="ghost" id="dgRecW">سجل السحب</button></div>
+    <div id="dgAdvice" style="margin-top:8px"></div>
+    <div class="label" style="margin-top:6px">الاستشارة ما تبدل الصندوق. الصرف الفعلي يتسجل في Caisse أو Achats أو Clients. زر "سجل السحب" كيحسب السحب الشخصي للشهر فقط.</div>
+  </div>
+  <div class="card">
     <h2>توزيع المبيعات اليومي (بالأولوية)</h2>
     <div id="dgAlloc"></div>
   </div>
@@ -1091,7 +1098,7 @@ function togglePaidField() {
 }
 document.getElementById("sPay").addEventListener("change", togglePaidField);
 document.getElementById("sPay").value = "cash";
-{ const saleRow = document.getElementById("sPay").closest(".row"); if (saleRow) saleRow.style.display = "none"; }
+document.getElementById("sPay").value = "cash"; togglePaidField();
 document.getElementById("sPaidNow").addEventListener("input", renderCart);
 document.getElementById("sSave").addEventListener("click", () => {
   if (!cart.length) return alert("Ajoute au moins un produit à la facture.");
@@ -1188,6 +1195,9 @@ function renderSales() {
   const dayList = D.sales.filter(s => s.date === day).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const tot = dayList.reduce((a, s) => a + s.amount, 0);
   const dayProfit = dayList.reduce((a, s) => a + saleProfit(s), 0);
+  // paiements de dettes clients de ce jour: ils entrent automatiquement dans la caisse
+  const dayPays = (D.customers || []).flatMap(c => c.entries.filter(e => e.type === "payment" && e.date === day).map(e => ({ name: c.name, amount: e.amount })));
+  const payTot = dayPays.reduce((a, p) => a + (Number(p.amount) || 0), 0);
   document.getElementById("hTotal").textContent = fmt(tot);
   document.getElementById("hCount").textContent = dayList.length;
   document.getElementById("hProfit").textContent = fmt(dayProfit);
@@ -1196,8 +1206,11 @@ function renderSales() {
   const dayOriginal = dayList.reduce((a, s) => a + s.amount + saleDiscount(s), 0);
   const dayDisc = dayList.reduce((a, s) => a + saleDiscount(s), 0);
   const dayDiscPct = dayOriginal ? Math.round(dayDisc / dayOriginal * 100) : 0;
-  document.getElementById("hSub").textContent = (day === t ? "Aujourd'hui" : day) + " · prix original : " + fmt(dayOriginal) + " · remises : " + fmt(dayDisc) + " (" + dayDiscPct + " %) · bénéfice total de toutes les ventes : " + fmt(allProfit);
-  document.getElementById("sList").innerHTML = all.slice(0, 200).map(s => `
+  document.getElementById("hSub").textContent = (day === t ? "Aujourd'hui" : day) + " · prix original : " + fmt(dayOriginal) + " · remises : " + fmt(dayDisc) + " (" + dayDiscPct + " %) · paiements de dettes : " + fmt(payTot) + " · bénéfice total de toutes les ventes : " + fmt(allProfit);
+  document.getElementById("sList").innerHTML = dayPays.map(p => `
+    <div class="item"><div style="flex:1"><div class="name">💰 دفع دين: ${esc(p.name)}</div>
+    <div class="meta">${esc(day)} · دخل الصندوق تلقائياً</div></div>
+    <div class="qty in">+${fmt(p.amount)}</div></div>`).join("") + all.slice(0, 200).map(s => `
     <div class="item"><div style="flex:1"><div class="name">${esc(s.name)}</div>
     <div class="meta">${esc(s.date)} · stock −${s.qty < 1 ? s.qty.toFixed(3) : num(s.qty)} ${esc(s.unit)}${s.discount ? " · remise " + fmt(s.discount) : ""}${s.note ? " · " + esc(s.note) : ""}</div>
     <div class="meta">bénéfice : <span class="${saleProfit(s) >= 0 ? "in" : "out"}">${fmt(saleProfit(s))}</span></div>
@@ -1821,7 +1834,7 @@ document.getElementById("pUseSug").addEventListener("click", () => {
   el.textContent = prev
     ? "Dernière ouverture : " + new Date(prev).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
     : "Première ouverture sur cet appareil";
-  el.textContent += " · version 26/11/2026 (تنظيم: Diagnostic مركز)";
+  el.textContent += " · version 26/11/2026 (تغطية المصاريف أولاً)";
   try { localStorage.setItem("calorie-boost-lastopen", new Date().toISOString()); } catch (e) {}
 })();
 
@@ -2794,8 +2807,12 @@ function renderAlloc() {
   const to = document.getElementById("dgTo").value || today();
   const n = Math.max(1, Math.round((new Date(to) - new Date(from)) / 86400000) + 1);
   const list = D.sales.filter(s => s.date >= from && s.date <= to);
-  const S = list.reduce((a, s) => a + (s.amount || 0), 0) / n;     // ventes / jour
-  const P = list.reduce((a, s) => a + saleProfit(s), 0) / n;       // bénéfice / jour
+  // الخطة تعتمد على المبيعات النقدية فقط؛ البيع بالدين يبان كمستحقات منفصلة
+  const cashList = list.filter(s => !s.credit);
+  const creditList = list.filter(s => s.credit);
+  const S = cashList.reduce((a, s) => a + (s.amount || 0), 0) / n;     // مبيعات نقدية / يوم
+  const P = cashList.reduce((a, s) => a + saleProfit(s), 0) / n;       // ربح المبيعات النقدية / يوم
+  const K = creditList.reduce((a, s) => a + (s.amount || 0), 0) / n;   // بيع بالدين / يوم (مستحقات)
   const C = Math.max(0, S - P);                                    // capital récupéré / jour
   const A = (D.diag.items || []).reduce((a, it) => a + dgDaily(it), 0);   // dépenses / jour
   const T = debtList().filter(s => Math.max(0, debtOwed(s)) > 0).reduce((a, s) => a + (s.payAmt || 0), 0) / 30; // échéances / jour
@@ -2815,7 +2832,8 @@ function renderAlloc() {
   const missing = Math.max(0, T - pay);
 
   const lines = [
-    `المبيعات في اليوم: ${dgN(S)}`,
+    `المبيعات النقدية في اليوم: ${dgN(S)}`,
+    `مستحقات الزبناء (بيع بالدين) في اليوم: ${dgN(K)} — لا تدخل الخطة حتى تدفع`,
     `١) المصاريف: ${dgN(A)} (من الربح ${dgN(fromProfit)}${shortfall > 0 ? "، ومن رأس المال " + dgN(shortfall) : ""})`,
     `٢) رأس المال المتاح للشراء والسداد: ${dgN(capital)}`,
     `٣) الشراء: ${dgN(buy)}`,
@@ -2849,6 +2867,74 @@ document.getElementById("dgInstSave").addEventListener("click", () => {
   try { localStorage.setItem(DEBT_KEY, JSON.stringify(list)); } catch (e) {}
   renderAll();
   alert("تم حفظ الأقساط.");
+});
+
+/* ===== استشارة قبل الصرف: المخزون أولاً، ثم الموردين، ثم السحب الشخصي (سقف 40 000 في الشهر) ===== */
+const DRAW_CAP = 40000;
+function dgMonthDraws() {
+  const m = today().slice(0, 7);
+  return ((D.diag && D.diag.withdrawals) || []).filter(w => (w.date || "").slice(0, 7) === m).reduce((a, w) => a + (Number(w.amount) || 0), 0);
+}
+function dgCapitalDay() {
+  const from = document.getElementById("dgFrom").value || addDaysStr(today(), -29);
+  const to = document.getElementById("dgTo").value || today();
+  const n = Math.max(1, Math.round((new Date(to) - new Date(from)) / 86400000) + 1);
+  const cash = D.sales.filter(s => s.date >= from && s.date <= to && !s.credit);
+  const S = cash.reduce((a, s) => a + (s.amount || 0), 0) / n;
+  const P = cash.reduce((a, s) => a + saleProfit(s), 0) / n;
+  return Math.max(0, S - P); // تكلفة البضاعة المباعة نقداً / يوم
+}
+function dgAdvise(op, amount) {
+  const cash = cashBalance().balance;
+  const A = ((D.diag && D.diag.items) || []).reduce((a, it) => a + dgDaily(it), 0);
+  const minCash = 10 * A;                       // الحد الأدنى المطلق: 10 أيام من المستحقات
+  const expRes = 30 * A;                       // 1) تغطية المصاريف: احتياطي شهر كامل قبل أي شي
+  const needBuy = dgCapitalDay() * 7;          // 2) شراء الأسبوع القادم للحفاظ على المخزون
+  const free = cash - expRes - needBuy;        // 3) المتاح للسداد للموردين والسحب
+  const drawn = dgMonthDraws();
+  const quota = Math.max(0, DRAW_CAP - drawn);
+  const lines = [];
+  let verdict = "";
+  if (cash < expRes) lines.push('<span class="out">⚠ الصندوق ما يغطيش مصاريف شهر كامل (' + dgN(expRes) + ').</span>');
+  if (op === "buy") {
+    if (cash - amount < expRes) verdict = "⚠ هاد الشراء يهدد تغطية المصاريف (احتياطي شهر " + dgN(expRes) + "). أجلو أو قلله.";
+    else if (cash - amount < minCash) verdict = "⚠ هاد الشراء ينزل الصندوق تحت الحد الأدنى (" + dgN(minCash) + ").";
+    else verdict = "✔ الشراء مزيان: المصاريف مغطاة، والمخزون محفوظ.";
+  } else if (op === "pay") {
+    if (cash - amount < expRes) verdict = "✖ الخلاص يهدد تغطية المصاريف. ما تسددش قبل ما تغطي المصاريف.";
+    else if (amount <= free) verdict = "✔ الخلاص مزيان: المصاريف والمخزون مغطيين.";
+    else verdict = "⚠ الخلاص يتجاوز المتاح (" + dgN(Math.max(0, free)) + "). الزيادة (" + dgN(amount - Math.max(0, free)) + ") كتضعف المخزون. قلل المبلغ أو أجل جزء منو.";
+  } else if (op === "draw") {
+    if (amount > quota) verdict = "✖ السحب يتجاوز السقف الشهري (" + dgN(DRAW_CAP) + "). المتبقي هاد الشهر: " + dgN(quota) + ".";
+    else if (cash - amount < expRes) verdict = "✖ السحب يهدد تغطية المصاريف (احتياطي شهر " + dgN(expRes) + "). أجلو.";
+    else if (cash - amount < minCash + needBuy) verdict = "⚠ السحب ضمن السقف، لكنو يضعف المخزون والصندوق. الأحسن تأجلو.";
+    else verdict = "✔ السحب مقبول: داخل السقف الشهري، والمخزون والصندوق يبقاو مزيانين.";
+  } else {
+    if (cash - amount < minCash) verdict = "⚠ هاد المصروف ينزل الصندوق تحت الحد الأدنى.";
+    else verdict = "✔ المصروف مقبول فالصندوق.";
+  }
+  lines.push("الصندوق الحالي: " + dgN(cash));
+  lines.push("الحد الأدنى (10 أيام): " + dgN(minCash));
+  lines.push("تغطية المصاريف (احتياطي شهر): " + dgN(expRes) + " · الصندوق يغطي " + (expRes ? Math.round(cash / expRes * 100) : 100) + " %");
+  lines.push("شراء الأسبوع للحفاظ على المخزون: " + dgN(needBuy));
+  lines.push("المتاح بعد المخزون والحد الأدنى: " + dgN(Math.max(0, free)));
+  if (op === "draw") lines.push("سحب هاد الشهر: " + dgN(drawn) + " من " + dgN(DRAW_CAP) + " (المتبقي " + dgN(quota) + ")");
+  return `<div style="line-height:2">${lines.map(l => `<div>• ${l}</div>`).join("")}</div><div style="margin-top:6px;font-weight:700">${verdict}</div>`;
+}
+document.getElementById("dgAsk").addEventListener("click", () => {
+  const op = document.getElementById("dgOp").value;
+  const amount = parseFloat(document.getElementById("dgOpAmt").value);
+  if (!(amount > 0)) return alert("اكتب المبلغ أولاً.");
+  document.getElementById("dgAdvice").innerHTML = dgAdvise(op, amount);
+});
+document.getElementById("dgRecW").addEventListener("click", () => {
+  const amount = parseFloat(document.getElementById("dgOpAmt").value);
+  if (!(amount > 0)) return alert("اكتب مبلغ السحب أولاً.");
+  if (!D.diag.withdrawals) D.diag.withdrawals = [];
+  D.diag.withdrawals.push({ id: "w" + uid(), date: today(), amount });
+  document.getElementById("dgOpAmt").value = "";
+  renderAll();
+  document.getElementById("dgAdvice").innerHTML = `<div class="in">✔ تم تسجيل السحب. المجموع هاد الشهر: ${dgN(dgMonthDraws())} من ${dgN(DRAW_CAP)}.</div>`;
 });
 
 D = load();
